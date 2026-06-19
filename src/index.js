@@ -1,15 +1,41 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { getMatches } from './routes/matches';
+import { getMatchDetails } from './routes/matchDetails';
+import { error, preflight } from './utils/response';
+import { getTeamIcon } from './routes/teamIcon';
 
 export default {
-	async fetch(request, env, ctx) {
-		return new Response("Hello World!");
+	async fetch(request) {
+		if (request.method === 'OPTIONS') {
+			return preflight();
+		}
+
+		if (request.method !== 'GET') {
+			return error('Method Not Allowed', 405);
+		}
+
+		try {
+			const url = new URL(request.url);
+
+			if (url.pathname === '/matches') {
+				return getMatches(request);
+			}
+
+			const matchRoute = url.pathname.match(/^\/matches\/(\d+)$/);
+
+			if (matchRoute) {
+				return getMatchDetails(request, matchRoute[1]);
+			}
+			const iconRoute = url.pathname.match(/^\/team-icon\/(\d+)\/([^/]+)$/);
+
+			if (iconRoute) {
+				return getTeamIcon(iconRoute[1], iconRoute[2]);
+			}
+
+			return error('Route Not Found', 404);
+		} catch (err) {
+			console.error(err);
+
+			return error(err.message || 'Internal Server Error', 500);
+		}
 	},
 };
