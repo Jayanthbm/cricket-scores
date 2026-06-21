@@ -1,4 +1,4 @@
-import { formatDate, formatOvers } from '../utils/formats';
+import { buildScore, formatDate, formatOvers } from '../utils/formats';
 
 function buildScorecard(inningsScoreList = []) {
 	return inningsScoreList.map((innings) => ({
@@ -27,14 +27,13 @@ function buildLive(miniscore) {
 		return null;
 	}
 
-
 	return {
 		inningsId: miniscore?.inningsId,
 
 		battingTeam:
 			miniscore?.matchScoreDetails?.matchTeamInfo?.find((x) => x.battingTeamId === miniscore?.batTeam?.teamId)?.battingTeamShortName || '',
 		currentScore: `${miniscore?.batTeam?.teamScore || 0}/${miniscore?.batTeam?.teamWkts || 0}`,
-		overs:formatOvers(miniscore?.overs || ''),
+		overs: formatOvers(miniscore?.overs || ''),
 		runRate: miniscore?.currentRunRate || 0,
 		requiredRunRate: miniscore?.requiredRunRate || 0,
 		remRunsToWin: miniscore?.remRunsToWin || 0,
@@ -89,18 +88,6 @@ function buildLive(miniscore) {
 	};
 }
 
-function buildCommentary(commentaryList = []) {
-	return commentaryList.slice(0, 10).map((commentary) => ({
-		over: commentary?.overNumber || 0,
-
-		event: commentary?.event || 'NONE',
-
-		text: commentary?.commText || '',
-
-		timestamp: commentary?.timestamp || 0,
-	}));
-}
-
 export function transformMatchDetails(rawData, matchSummary, baseUrl) {
 	const miniscore = rawData?.miniscore || {};
 
@@ -108,6 +95,12 @@ export function transformMatchDetails(rawData, matchSummary, baseUrl) {
 
 	const info = matchSummary?.match?.matchInfo;
 
+	const score = matchSummary.match.matchScore;
+	const team1Score = buildScore(score?.team1Score);
+	const team2Score = buildScore(score?.team2Score);
+
+	const showMatchScore = info?.state === 'Complete' || info?.state === 'Stumps' ? true : false;
+	const isLive = info?.state === 'In Progress' || info?.state === 'Innings Break' ? true : false;
 	return {
 		matchFormat: info.matchFormat,
 		state: info.state,
@@ -137,8 +130,8 @@ export function transformMatchDetails(rawData, matchSummary, baseUrl) {
 			},
 			toss: buildToss(scoreDetails),
 		},
-		live: buildLive(miniscore),
-		commentary: buildCommentary(rawData?.commentaryList),
+		live: isLive ? buildLive(miniscore) : null,
+		matchScoreDetails: showMatchScore ? miniscore?.matchScoreDetails : null,
 		lastUpdated: miniscore?.responseLastUpdated || Date.now(),
 	};
 }

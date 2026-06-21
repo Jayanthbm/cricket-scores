@@ -1,3 +1,7 @@
+export function formatInnings(inngs) {
+	if (!inngs) return null;
+	return `${inngs.runs}/${inngs.wickets}(${formatOvers(inngs.overs)})`;
+}
 export function getStatusType(state) {
 	switch (state) {
 		case 'In Progress':
@@ -39,4 +43,32 @@ export function formatOvers(overs) {
 	const finalOvers = balls === '6' ? Number(completedOvers) + 1 : overs;
 
 	return finalOvers;
+}
+
+export function buildScore(teamScore) {
+	if (!teamScore) return '';
+
+	const innings = [];
+
+	if (teamScore.inngs1) {
+		innings.push(formatInnings(teamScore.inngs1));
+	}
+
+	if (teamScore.inngs2) {
+		innings.push(formatInnings(teamScore.inngs2));
+	}
+
+	return innings.join(' & ');
+}
+
+export function buildDisplayScore(team1ShortName, team2ShortName, team1Score, team2Score, statusType, shortStatus) {
+	if (team1Score || team2Score) {
+		return `${team1ShortName} ${team1Score} | ${team2ShortName} ${team2Score}`;
+	}
+
+	if (statusType === 'UPCOMING') {
+		return shortStatus;
+	}
+
+	return null;
 }

@@ -1,42 +1,5 @@
-import { formatDate, formatOvers, getStatusType } from "../utils/formats";
+import { buildDisplayScore, buildScore, formatDate, formatOvers, getStatusType } from '../utils/formats';
 
-
-
-function formatInnings(inngs) {
-	if (!inngs) return null;
-	return `${inngs.runs}/${inngs.wickets}(${formatOvers(inngs.overs)})`;
-}
-
-function buildScore(teamScore) {
-	if (!teamScore) return '';
-
-	const innings = [];
-
-	if (teamScore.inngs1) {
-		innings.push(formatInnings(teamScore.inngs1));
-	}
-
-	if (teamScore.inngs2) {
-		innings.push(formatInnings(teamScore.inngs2));
-	}
-
-	return innings.join(' & ');
-}
-
-
-
-
-function buildDisplayScore(team1ShortName, team2ShortName, team1Score, team2Score, statusType, shortStatus) {
-	if (team1Score || team2Score) {
-		return `${team1ShortName} ${team1Score} | ${team2ShortName} ${team2Score}`;
-	}
-
-	if (statusType === 'UPCOMING') {
-		return shortStatus;
-	}
-
-	return null;
-}
 
 export function transformMatch(matchData, baseUrl) {
 	const info = matchData.match.matchInfo;

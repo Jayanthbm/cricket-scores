@@ -25,6 +25,5 @@ export async function getMatches(request) {
 			lastUpdated: response.responseLastUpdated,
 			lastUpdatedText: formatLastUpdated(response.responseLastUpdated),
 		},
-		originalResponse: response,
 	});
 }
