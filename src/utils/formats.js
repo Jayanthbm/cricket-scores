@@ -1,6 +1,6 @@
 export function formatInnings(inngs) {
 	if (!inngs) return null;
-	return `${inngs.runs}/${inngs.wickets}(${formatOvers(inngs.overs)})`;
+	return `${inngs.runs}/${inngs.wickets || 0}(${formatOvers(inngs.overs)})`;
 }
 export function getStatusType(state) {
 	switch (state) {
