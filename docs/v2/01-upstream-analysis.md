@@ -324,6 +324,16 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
     "Match drawn", "Match abandoned", ...); header.result is present for
     completed matches but its codes vary.
 20. **commentary inningsId is 0** for pre-match INFO entries (squads, venue).
+21. **Result prose is rewritten after the match ends.** 151352's status was
+    "...7 wkts - 2nd Innings reduced to 16 Overs, DLS Target 93" at COMPLETE,
+    "(... , DLS Target 93)" five minutes later, and "(... DLS Target 93)" now;
+    punctuation and separators change, the outcome does not. Never parse
+    result.text - result.type and margin are stable.
+22. **A completed match keeps its livescore body but drops state and status**
+    from that header (162951 and 151352 both return miniscore with state None,
+    status None); scorecard and commentary headers keep "Complete". So the
+    completion signal must be taken from the scorecard/comm header, not from
+    whichever feed answered first.
 
 ## 9. Trap -> v2 handling table
 

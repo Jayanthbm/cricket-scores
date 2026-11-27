@@ -234,6 +234,12 @@ carries no matchHeader at all (175843 at its toss).
 winnerTeamId, winnerTeamName and winnerTeamShortName are all null unless type
 is WIN (draws, ties, no-results and abandonments have no winning side).
 
+text is upstream prose and **is rewritten after the match ends**, so never
+string-match it: 151352's text was captured as "England won by 7 wkts - 2nd
+Innings reduced to 16 Overs, DLS Target 93" at COMPLETE, then as "... (2nd
+Innings reduced to 16 Overs, DLS Target 93)", and now reads "... (2nd Innings
+reduced to 16 Overs DLS Target 93)". Use type, winnerTeamId and margin.
+
 ```json
 {
 	"id": 52736,
