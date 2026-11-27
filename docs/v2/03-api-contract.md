@@ -132,7 +132,7 @@ header knows the match.
 | stateLabel     | string           | no   | "Live", "Break", "Stumps", "Completed", "Upcoming", ...                                                                                      |
 | rawState       | string           | yes  | untouched upstream state                                                                                                                     |
 | status         | string           | no   | human status line ("won by 8 wkts", "need 51 runs in 66 balls"); a stale toss sentence is replaced by "<team> <score>" once a ball is bowled |
-| shortStatus    | string           | yes  | compact upstream status ("SLA won")                                                                                                          |
+| shortStatus    | string           | yes  | compact upstream status ("SLA won"); live, it falls back to "<short> <score>" ("AUS 7/0 (1)") when the feed has the toss sentence or nothing |
 | isLive         | boolean          | no   | state in {LIVE, SESSION_BREAK, INNINGS_BREAK, STUMPS, DELAYED}                                                                               |
 | isUpcoming     | boolean          | no   | state in {SCHEDULED, TOSS}                                                                                                                   |
 | isComplete     | boolean          | no   | state in {COMPLETE, ABANDONED}                                                                                                               |

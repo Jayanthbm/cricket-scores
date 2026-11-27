@@ -310,6 +310,7 @@ describe('match assembly', () => {
 
 		expect(match.state).toBe(MATCH_STATE.LIVE);
 		expect(match.status).toBe('Ireland A 24/0 (3.5)');
+		expect(match.shortStatus).toBe('IREA 24/0 (3.5)');
 	});
 
 	it('keeps the toss status before the first ball', () => {

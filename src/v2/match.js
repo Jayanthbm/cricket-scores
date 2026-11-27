@@ -366,11 +366,20 @@ export function buildMatch({
 	// Upstream keeps the toss sentence as the status well into the new innings
 	// (175843 still said "Zimbabwe A opt to bowl" at 24/0 in 4), so once a ball
 	// has been bowled the score line says more than the toss.
-	if (match.live && /opt to (bat|bowl)/i.test(status) && match.live.score.balls > 0) {
+	if (match.live && match.live.score.balls > 0) {
 		const batting = match.teams.find((team) => team.isBatting);
 
 		if (batting) {
-			match.status = `${batting.name} ${match.live.score.display}`;
+			if (/opt to (bat|bowl)/i.test(status)) {
+				match.status = `${batting.name} ${match.live.score.display}`;
+			}
+
+			// shortStatus comes from the home feed, which keeps the toss sentence
+			// (151352) or drops the match entirely once it goes live; either way a
+			// score line is the honest short label.
+			if (!match.shortStatus || /opt to (bat|bowl)/i.test(match.shortStatus)) {
+				match.shortStatus = `${batting.shortName} ${match.live.score.display}`;
+			}
 		}
 	}
 

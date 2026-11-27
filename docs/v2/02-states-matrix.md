@@ -237,7 +237,9 @@ Practical rules that fall out of the matrix:
   list with enrich=none it can be null.
 - status lags the state: 175843 read "Zimbabwe A opt to bowl" while IREA were
   24/0 in 4. Once a ball is bowled v2 replaces a toss-sentence status with
-  "<batting team> <score>" ("Ireland A 24/0 (4)").
+  "<batting team> <score>" ("Ireland A 24/0 (4)"). shortStatus gets the same
+  treatment with the short name ("AUS 7/0 (1)"), because the home feed either
+  keeps the toss line (151352) or drops the live match entirely.
 - playerOfMatch is empty for matches that just finished (upstream lag). Show
   "Awards" only when non-empty, or refetch the hub after a few minutes.
 - commentary for a not-started match is either 204 (no payload) or INFO-only
