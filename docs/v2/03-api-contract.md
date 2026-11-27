@@ -205,6 +205,8 @@ v2 turns that back into "9.8".
 ```
 
 decision is BAT, BOWL or UNKNOWN; decisionText is the display string ("Batting").
+Toss comes from the scorecard header, so it survives matches whose livescore
+carries no matchHeader at all (175843 at its toss).
 
 ```json
 "result": {

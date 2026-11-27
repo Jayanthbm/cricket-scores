@@ -138,13 +138,13 @@ a normal innings object. (Not yet captured live - see doc 04.)
 ### 3.1 What is actually verified (Nov 2026 capture set)
 
 Legend: **yes** = real payload captured and asserted; **toss** = toss data
-verified but the TOSS _state_ was only captured on a Test; **-** = not
-applicable to the format; **no** = implemented, waiting for a payload.
+verified but the TOSS _state_ has not been captured for that format yet; **-**
+= not applicable to the format; **no** = implemented, waiting for a payload.
 
 | format      | SCHEDULED | TOSS | LIVE    | SESSION_BREAK | INNINGS_BREAK | STUMPS  | DELAYED | COMPLETE | ABANDONED | evidence                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ----------- | --------- | ---- | ------- | ------------- | ------------- | ------- | ------- | -------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | yes (2)   | 151352 Preview + 151374/175283 Upcoming, 178440 delayed before and after the toss then live in a 13-over rain-reduced innings (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT, 161476 + 162088 abandoned without a toss, 161487 no result (state COMPLETE, result NO_RESULT)                                                                                        |
-| ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (3)  | yes (1)   | 177210 chase won by 8 wkts, 161245 DLS-reduced chase won by 5 wkts, 161256 won by 4 runs (DLS), 161260 abandoned after the toss with no innings                                                                                                                                                                                                                                                                            |
+| ODI         | toss      | yes  | no      | no            | no            | -       | no      | yes (3)  | yes (1)   | 175843 reached TOSS at 12:54 IST (ZIMA chose to bowl, livescore carried no matchHeader), 177210 chase won by 8 wkts, 161245 DLS-reduced chase won by 5 wkts, 161256 won by 4 runs (DLS), 161260 abandoned after the toss with no innings                                                                                                                                                                                   |
 | TEST        | yes (2)   | yes  | yes (4) | yes (1)       | yes (2)       | yes (4) | no      | yes (6)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 166697 live day 4, innings break (lead 147) then a 4th-innings chase at tea (target 148, need 131), 171340 live day 1 then innings break after the 1st innings, 147964 innings win + declaration, 147931 follow-on + innings and 31, 161285 + 166687 draws, 166643 draw with a 4th-innings chase |
 | T10         | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 176250 Abu Dhabi T10, labelled "T20" upstream, 60-ball limit                                                                                                                                                                                                                                                                                                                                                               |
 | THE_HUNDRED | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 144673 (format "HUN"), 100-ball limit, overs "9.8" = 9 sets + 8 balls                                                                                                                                                                                                                                                                                                                                                      |
@@ -206,7 +206,7 @@ no real payload behind it yet.
 
 | required                           | why it matters                                                                                                                                                |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T20 at TOSS                        | the TOSS state was only captured on a four-day Test; toss fields are verified, the state transition is not                                                    |
+| T20 at TOSS                        | TOSS is captured on a Test (171807) and an ODI (175843); the T20 transition between Preview and In Progress is still unseen                                   |
 | ODI live (any phase)               | the only ODI payload is a completed chase; mid-innings target/RRR/powerplay unverified                                                                        |
 | a live T10 / Hundred / Sixes match | only finished payloads so far; limits are applied but never exercised live                                                                                    |
 | in-play rain delay / interruption  | DELAYED is verified before and after the toss (178440) but never mid-innings; need to see whether the score freezes                                           |
@@ -221,18 +221,18 @@ Doc 04 lists the questions each capture has to answer.
 
 What upstream returns and therefore what v2 can populate.
 
-| state               | livescore                                       | scorecard                        | comm                      | v2 match fields that are meaningfully filled                                                                                                                                        |
-| ------------------- | ----------------------------------------------- | -------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SCHEDULED (Preview) | yes (status "Match starts at ...", inningsId 0) | yes (header only; empty innings) | 204 or INFO-only (squads) | teams (no scores), series, venue, startTime, toss null, result null, playerOfMatch usually []                                                                                       |
-| TOSS                | yes (status "X opt to bat", no score)           | yes (header, tossResults)        | INFO entries              | toss populated, teams no scores, live null                                                                                                                                          |
-| LIVE                | yes                                             | yes                              | yes                       | everything: live.score/target/partnership/lastWicket/batsmen/bowlers/drs/winProbability, teams scores, isBatting. A Test 4th-innings chase sets live.target (166697: 148, need 131) |
-| SESSION_BREAK       | yes (status "Day 1: Tea Break")                 | yes                              | yes                       | everything LIVE has, but play is paused; rawState keeps Tea/Lunch/Drinks, the score freezes while live.updatedAt keeps moving (166697 tea lasted ~28 min on day 4)                  |
-| INNINGS_BREAK       | yes ("Day 4: Innings Break - lead by 147")      | yes                              | yes                       | live.score of the finished innings, target null, lastWicket + last partnership, inningsId still points at the innings that ended, isBatting false on both sides                     |
-| STUMPS              | yes (status "Day 3: Stumps - ...")              | yes                              | yes                       | live.test.day, leadRuns/trailRuns, inningsSummary 2-4 innings                                                                                                                       |
-| DELAYED             | yes (status "Rain delay" etc.)                  | yes                              | yes                       | live.score frozen, isDelayed true. A delay around the toss (178440) has no innings at all: live null, teams no scores, toss null before it and populated after                      |
-| COMPLETE            | yes (status = result text)                      | yes                              | yes                       | result, playerOfMatch (may lag), inningsSummary final, live.target null, winProbability null. A rain washout is COMPLETE + result NO_RESULT (161487), not ABANDONED                 |
-| ABANDONED           | yes (status "Match abandoned")                  | yes (header only, zero innings)  | INFO-only map or 204      | result.type ABANDONED, no scores, inningsSummary [], toss may be present (161260) or null (161476, 162088), hasScorecard is still true                                              |
-| UNKNOWN             | whatever                                        | whatever                         | whatever                  | teams + rawState only                                                                                                                                                               |
+| state               | livescore                                       | scorecard                                                                    | comm                      | v2 match fields that are meaningfully filled                                                                                                                                        |
+| ------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SCHEDULED (Preview) | yes (status "Match starts at ...", inningsId 0) | yes (header only; empty innings)                                             | 204 or INFO-only (squads) | teams (no scores), series, venue, startTime, toss null, result null, playerOfMatch usually []                                                                                       |
+| TOSS                | yes (status "X opt to bat", no score)           | yes (scorecard header, tossResults; livescore may omit matchHeader - 175843) | INFO entries              | toss populated, teams no scores, live null                                                                                                                                          |
+| LIVE                | yes                                             | yes                                                                          | yes                       | everything: live.score/target/partnership/lastWicket/batsmen/bowlers/drs/winProbability, teams scores, isBatting. A Test 4th-innings chase sets live.target (166697: 148, need 131) |
+| SESSION_BREAK       | yes (status "Day 1: Tea Break")                 | yes                                                                          | yes                       | everything LIVE has, but play is paused; rawState keeps Tea/Lunch/Drinks, the score freezes while live.updatedAt keeps moving (166697 tea lasted ~28 min on day 4)                  |
+| INNINGS_BREAK       | yes ("Day 4: Innings Break - lead by 147")      | yes                                                                          | yes                       | live.score of the finished innings, target null, lastWicket + last partnership, inningsId still points at the innings that ended, isBatting false on both sides                     |
+| STUMPS              | yes (status "Day 3: Stumps - ...")              | yes                                                                          | yes                       | live.test.day, leadRuns/trailRuns, inningsSummary 2-4 innings                                                                                                                       |
+| DELAYED             | yes (status "Rain delay" etc.)                  | yes                                                                          | yes                       | live.score frozen, isDelayed true. A delay around the toss (178440) has no innings at all: live null, teams no scores, toss null before it and populated after                      |
+| COMPLETE            | yes (status = result text)                      | yes                                                                          | yes                       | result, playerOfMatch (may lag), inningsSummary final, live.target null, winProbability null. A rain washout is COMPLETE + result NO_RESULT (161487), not ABANDONED                 |
+| ABANDONED           | yes (status "Match abandoned")                  | yes (header only, zero innings)                                              | INFO-only map or 204      | result.type ABANDONED, no scores, inningsSummary [], toss may be present (161260) or null (161476, 162088), hasScorecard is still true                                              |
+| UNKNOWN             | whatever                                        | whatever                                                                     | whatever                  | teams + rawState only                                                                                                                                                               |
 
 Practical rules that fall out of the matrix:
 
@@ -274,6 +274,39 @@ Practical rules that fall out of the matrix:
 	"result": null,
 	"playerOfMatch": [],
 	"inningsSummary": [],
+	"live": null
+}
+```
+
+### TOSS - 175843 (Ireland A tour of Zimbabwe, 5th unofficial ODI, 12:54 IST)
+
+The livescore payload for this match had **no matchHeader at all** - only
+miniscore - so toss, venue and series came from the scorecard header. The state
+flip Preview -> TOSS happened between the 12:45 and 12:54 checks, 36 minutes
+before the 13:00 start (the 12:30 and 12:45 checks still read Preview).
+
+```json
+{
+	"id": 175843,
+	"format": "ODI",
+	"state": "TOSS",
+	"stateLabel": "Toss",
+	"rawState": "Toss",
+	"status": "Zimbabwe A opt to bowl",
+	"isLive": false,
+	"startTime": "2026-11-27T07:30:00.000Z",
+	"venue": { "id": 69, "name": "Harare Sports Club", "city": "Harare", "country": "Zimbabwe" },
+	"toss": {
+		"winnerTeamId": 342,
+		"winnerTeamName": "Zimbabwe A",
+		"winnerTeamShortName": "ZIMA",
+		"decision": "BOWL",
+		"decisionText": "Bowling"
+	},
+	"teams": [
+		{ "shortName": "ZIMA", "score": null, "isBatting": false },
+		{ "shortName": "IREA", "score": null, "isBatting": false }
+	],
 	"live": null
 }
 ```
