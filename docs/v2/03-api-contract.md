@@ -313,6 +313,13 @@ while target.runs and remRunsToWin still carry the pre-rain values (109 and 56).
 For a few seconds target.runs is therefore the older number; runsNeeded and
 ballsRemaining stay internally consistent with whatever target.runs says.
 
+In a limited-overs chase the opposite lag also happens: miniscore.inningsId
+flips to 2 about 30 s before it carries a target (175843 at 17:13:03 said
+"Zimbabwe A need 279 runs" with target null while the scorecard still listed
+only innings 1). target is then derived as first innings + 1, so the chase
+object is already usable; in Tests nothing is derived and it waits for
+upstream.
+
 When the chase finishes the reduction leaves the structured fields again
 (revisedOvers back to null, target null) but stays in result.text: 151352 ends
 with "England won by 7 wkts (2nd Innings reduced to 16 Overs, DLS Target 93)".

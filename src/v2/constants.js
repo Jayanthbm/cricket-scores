@@ -176,6 +176,8 @@ export function detectFormat({ matchFormat, seriesName, matchDesc } = {}) {
 
 // Maximum balls in a regular innings. Used to derive balls remaining for a chase.
 // TEST is intentionally absent (no fixed limit, and 4th innings has no over cap).
+export const LIMITED_OVERS_FORMATS = new Set(['T20', 'ODI', 'T10', 'THE_HUNDRED', 'SIXES']);
+
 export const FORMAT_INNINGS_BALLS = {
 	T20: 120,
 	ODI: 300,

@@ -1,4 +1,4 @@
-import { FINISHED_STATES, FORMAT_INNINGS_BALLS, detectFormat, normalizeState } from './constants';
+import { FINISHED_STATES, FORMAT_INNINGS_BALLS, LIMITED_OVERS_FORMATS, detectFormat, normalizeState } from './constants';
 import { ballsToOvers, oversToBalls, round2, safeArray, scoreLine, stripHtml, toEpochIso, toNumber } from './utils';
 
 function normalizeOversText(overs) {
@@ -276,7 +276,18 @@ export function buildLive({ livescoreJson, scorecardJson, teams = [], format }) 
 		format: resolvedFormat,
 	});
 
-	const targetRuns = toNumber(miniscore.target, 0);
+	let targetRuns = toNumber(miniscore.target, 0);
+	// The miniscore flips inningsId to 2 about 30 s before it carries a target
+	// (175843 at 17:13:03 said "need 279 runs" with target null); in a limited
+	// overs chase the target is simply the first innings plus one.
+	if (targetRuns === 0 && inningsId === 2 && LIMITED_OVERS_FORMATS.has(resolvedFormat)) {
+		const firstInnings = safeArray(scorecardJson?.scoreCard).find((item) => toNumber(item.inningsId) === 1);
+		const firstRuns = toNumber(firstInnings?.scoreDetails?.runs, 0);
+
+		if (firstRuns > 0) {
+			targetRuns = firstRuns + 1;
+		}
+	}
 	// Target minus scored first: it always agrees with the two numbers we expose.
 	// remRunsToWin lags a DLS revision (151352 sent target 98 with remRunsToWin 57
 	// while the score was 53, so 57 would have contradicted both), and Tests send

@@ -454,6 +454,44 @@ describe('match assembly', () => {
 		expect(match.shortStatus).toBe('HBHW 5/0 (0.4)');
 	});
 
+	it('derives a limited-overs target when the miniscore has not sent one yet', () => {
+		const live = livescoreFixture({
+			batTeam: { teamId: 40, teamScore: 0, teamWkts: 0 },
+			overs: 0,
+			target: 0,
+			remRunsToWin: 0,
+			requiredRunRate: 0,
+			matchScoreDetails: {
+				state: 'In Progress',
+				matchFormat: 'ODI',
+				inningsScoreList: [{ inningsId: 2, batTeamId: 40, score: 0, wickets: 0, overs: 0 }],
+			},
+		});
+		const match = buildMatch({
+			header: {
+				matchId: 15,
+				matchFormat: 'ODI',
+				state: 'In Progress',
+				status: 'Zimbabwe A need 279 runs',
+				team1: { id: 39, name: 'Ireland A', shortName: 'IREA' },
+				team2: { id: 40, name: 'Zimbabwe A', shortName: 'ZIMA' },
+			},
+			livescoreJson: live,
+			scorecardJson: {
+				scoreCard: [
+					{
+						inningsId: 1,
+						batTeamDetails: { batTeamId: 39, batTeamName: 'Ireland A', batTeamShortName: 'IREA' },
+						scoreDetails: { runs: 278, wickets: 9, overs: 50 },
+					},
+				],
+			},
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.live.target).toEqual(expect.objectContaining({ runs: 279, runsNeeded: 279, ballsRemaining: 300, requiredRunRate: 5.58 }));
+	});
+
 	it('replaces a chase shortStatus once the match is finished', () => {
 		const match = buildMatch({
 			header: {
