@@ -535,6 +535,22 @@ describe('live block', () => {
 		expect(live.score).toMatchObject({ runs: 17, wickets: 3, overs: '8' });
 	});
 
+	it('ignores a remRunsToWin that lags a DLS revision', () => {
+		// 151352 sent target 98, score 53 and remRunsToWin 57: the target had been
+		// revised but the remaining-runs field was still computed off 109.
+		const ls = livescoreFixture({
+			remRunsToWin: 57,
+			target: 98,
+			requiredRunRate: 4.22,
+			batTeam: { teamId: 9, teamScore: 53, teamWkts: 3 },
+			overs: 6.2,
+		});
+
+		const live = buildLive({ livescoreJson: ls, scorecardJson: scorecardFixture() });
+
+		expect(live.target).toMatchObject({ runs: 98, runsNeeded: 45 });
+	});
+
 	it('uses the revised overs as the innings limit', () => {
 		const card = scorecardFixture();
 		card.scoreCard[0].scoreDetails.revisedOvers = 13;

@@ -277,9 +277,13 @@ export function buildLive({ livescoreJson, scorecardJson, teams = [], format }) 
 	});
 
 	const targetRuns = toNumber(miniscore.target, 0);
-	// Tests send remRunsToWin 0 even while a 4th-innings chase is live (166697:
-	// "Victoria need 131 runs" with remRunsToWin 0), so fall back to target - scored.
-	const runsNeeded = targetRuns > 0 ? Math.max(toNumber(miniscore.remRunsToWin, 0), targetRuns - score.runs) : 0;
+	// Target minus scored first: it always agrees with the two numbers we expose.
+	// remRunsToWin lags a DLS revision (151352 sent target 98 with remRunsToWin 57
+	// while the score was 53, so 57 would have contradicted both), and Tests send
+	// it as 0 even while a 4th-innings chase is live (166697: "Victoria need 131
+	// runs"), so it is only a fallback.
+	const computedRunsNeeded = targetRuns > 0 && score.runs !== null ? targetRuns - score.runs : null;
+	const runsNeeded = computedRunsNeeded !== null && computedRunsNeeded > 0 ? computedRunsNeeded : toNumber(miniscore.remRunsToWin, 0);
 	const limitBalls = inningsLimitBalls({ format: resolvedFormat, scorecardJson, inningsId });
 	const ballsRemaining = limitBalls !== null && score.balls !== null ? Math.max(limitBalls - score.balls, 0) : null;
 	const providedRequiredRate = toNumber(miniscore.requiredRunRate, 0);

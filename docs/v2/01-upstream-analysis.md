@@ -311,7 +311,10 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
     array in the comm header does.
 14. **matchUdrs.team1Id = batting team**, team2Id = bowling team.
 15. **ppData is an object**, can hold multiple powerplays, {} for Tests.
-16. **revisedOvers** is the only signal for a DLS/reduced-overs innings.
+16. **revisedOvers** is the only structured DLS signal, and it lands before
+    the target: 151352 showed revisedOvers 17 and a "DLS Target 98" status
+    while miniscore.target was still 109 and remRunsToWin 57 (which is 109
+    minus the score); target 98 followed about 20 s later.
 17. **batsmenData includes did-not-bat rows** (outDesc "", no balls faced).
 18. **miniscore.overs and scoreDetails.overs disagree** in type (number vs
     float) but mean the same thing.

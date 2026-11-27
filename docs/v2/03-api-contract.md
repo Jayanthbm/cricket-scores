@@ -300,9 +300,18 @@ Target:
 
 ballsRemaining uses the format innings limit or revisedOvers (DLS), so it is
 null for Tests. requiredRunsPerBall is null unless upstream provides it.
-runsNeeded prefers upstream remRunsToWin but falls back to runs - score.runs,
-because Tests send 0 there even while a 4th-innings chase is live (166697:
-target 148, runsNeeded 131). requiredRunRate is therefore null for a Test chase.
+runsNeeded is runs - score.runs whenever that is positive, and only falls back
+to upstream remRunsToWin when it is not. remRunsToWin lags a DLS revision
+(151352 sent target 98 and score 53 but remRunsToWin 57, which contradicted
+both), and Tests send 0 there even while a 4th-innings chase is live (166697:
+target 148, runsNeeded 131). requiredRunRate is upstream's when non-zero,
+otherwise recomputed from runsNeeded, so a Test chase keeps it null.
+
+A DLS revision arrives in pieces, roughly 40 s apart (151352): revisedOvers and
+the status text ("2nd Innings reduced to 17 Overs, DLS Target 98") update first,
+while target.runs and remRunsToWin still carry the pre-rain values (109 and 56).
+For a few seconds target.runs is therefore the older number; runsNeeded and
+ballsRemaining stay internally consistent with whatever target.runs says.
 
 LastWicket:
 

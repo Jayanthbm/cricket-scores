@@ -92,17 +92,17 @@ super overs are rare).
 
 ### 3.2 What to hunt, and when
 
-| Target                              | Where/when to look                                 | What to set up                                                 |
-| ----------------------------------- | -------------------------------------------------- | -------------------------------------------------------------- |
-| INNINGS BREAK                       | any limited-overs match around the 1st innings end | watchlist a T20/ODI on match day                               |
-| DELAYED (rain)                      | rainy venues / monsoon season                      | watch a match with rain forecast, or let the harness run       |
-| ABANDONED / NO RESULT               | washouts                                           | same                                                           |
-| TIE                                 | close chases                                       | hard to predict; harness catches it if running                 |
-| SUPER OVER                          | tied T20/ODI                                       | same                                                           |
-| DLS / revised overs                 | rain-affected matches                              | check scoreDetails.revisedOvers and live.target.ballsRemaining |
-| TEST 4th innings                    | day 4-5 of a Test (166697 covers the chase at tea) | watchlist the Test, capture at Stumps                          |
-| THE_HUNDRED / T10                   | competitions using them                            | watchlist one match                                            |
-| 2nd innings target at Innings Break | limited overs                                      | check whether target is already set before the chase starts    |
+| Target                              | Where/when to look                                 | What to set up                                                                                              |
+| ----------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| INNINGS BREAK                       | any limited-overs match around the 1st innings end | watchlist a T20/ODI on match day                                                                            |
+| DELAYED (rain)                      | rainy venues / monsoon season                      | watch a match with rain forecast, or let the harness run                                                    |
+| ABANDONED / NO RESULT               | washouts                                           | same                                                                                                        |
+| TIE                                 | close chases                                       | hard to predict; harness catches it if running                                                              |
+| SUPER OVER                          | tied T20/ODI                                       | same                                                                                                        |
+| DLS / revised overs                 | rain-affected matches                              | ~~captured (151352)~~: revisedOvers 17 + "DLS Target 98" status arrive before target.runs 98.ballsRemaining |
+| TEST 4th innings                    | day 4-5 of a Test (166697 covers the chase at tea) | watchlist the Test, capture at Stumps                                                                       |
+| THE_HUNDRED / T10                   | competitions using them                            | watchlist one match                                                                                         |
+| 2nd innings target at Innings Break | limited overs                                      | check whether target is already set before the chase starts                                                 |
 
 ### 3.3 What to send
 
@@ -110,8 +110,8 @@ When you spot one of these on the site, send the match id plus what it is.
 The harness then records it with `npm run capture -- --matches <id>` (works
 even when the match is not in /api/home), and it becomes a fixture + test:
 
-- rain stopping play mid-innings (Delay / Interrupted), or a DLS-revised
-  **chase** (178440 covers a reduced first innings, not a chase)
+- ~~rain stopping play mid-innings, or a DLS-revised chase~~ (151352 captured
+  both on 27 Nov: two breaks, and a chase cut to 17 overs with DLS target 98)
 - an abandoned match or a no-result
 - a tied match, and a super over
 - any live T10 / The Hundred / Sixes match (finished ones are covered by
