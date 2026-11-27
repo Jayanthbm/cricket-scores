@@ -101,7 +101,6 @@ Commentary:
   "available": true,
   "inningsId": 2,
   "latestInningsOnly": true,
-  "currentBreak": { "type": "DRINKS", "text": "Drinks are on the field now", "at": "2026-11-27T12:30:53.000Z" },
   "entries": [ Entry, ... ],
   "updatedAt": "2026-11-26T18:31:22.000Z"
 }
@@ -115,12 +114,10 @@ Commentary:
   from the latest innings** (161285, a finished Test, sent 24 entries all from
   innings 3). `latestInningsOnly` says so explicitly; earlier innings cannot be
   requested - there is no pagination.
-- **currentBreak is the only place a drinks break or a timeout shows up.**
-  162951 sat at "51/3 (10)" for 1m40s with state LIVE, rawState "In Progress"
-  and events [], while commentary carried INFO "Drinks are on the field now".
-  It is null once a BALL or OVER entry is newer than the notice, and its type
-  is DRINKS, TIMEOUT or RAIN. Match-level state cannot report it: the livescore
-  feed never changes.
+- A drinks break or timeout appears **only as an INFO entry**, never in the
+  match payload: 162951 sat at "51/3 (10)" for 1m40s with state LIVE, rawState
+  "In Progress" and events [] while commentary carried "Drinks are on the field
+  now". No field is derived from those notices.
 
 404 MATCH_NOT_FOUND only when neither commentary, livescore nor the scorecard
 header knows the match.
