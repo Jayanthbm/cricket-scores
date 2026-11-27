@@ -147,13 +147,18 @@ function summaryText(value) {
 	return text || null;
 }
 
-function buildPlayerAward(player, baseUrl, fallbackPlayer) {
+function buildPlayerAward(player, baseUrl, fallbackPlayer, teams = []) {
 	const imageId = toNumber(player?.faceImageId) ?? toNumber(fallbackPlayer?.faceImageId);
 	const name = player?.fullName || player?.name || fallbackPlayer?.fullName || '';
 	// The comm header carries the summaries but no team, the scorecard header
 	// carries the team but no summaries (151352); 0 is upstream's unknown team.
 	const teamId = toNumber(player?.teamId) || toNumber(fallbackPlayer?.teamId) || null;
-	const teamName = player?.teamName || fallbackPlayer?.teamName || null;
+	// Upstream's teamName is the player's national side, not the side in this
+	// match: 162951's WBBL POM came back as "New Zealand Women" while the teams
+	// were Perth Scorchers and Hobart Hurricanes. Keep it only when it names one
+	// of the two sides actually playing (151352's "England" survives).
+	const rawTeamName = player?.teamName || fallbackPlayer?.teamName || null;
+	const teamName = rawTeamName && teams.some((team) => team.name === rawTeamName || team.shortName === rawTeamName) ? rawTeamName : null;
 
 	return {
 		id: toNumber(player?.id),
@@ -167,13 +172,13 @@ function buildPlayerAward(player, baseUrl, fallbackPlayer) {
 	};
 }
 
-function buildAwardsWithFallback(primary, fallback, baseUrl) {
+function buildAwardsWithFallback(primary, fallback, baseUrl, teams = []) {
 	const other = Array.isArray(fallback) ? fallback : [];
 
 	return (Array.isArray(primary) ? primary : []).map((player) => {
 		const match = other.find((candidate) => toNumber(candidate?.id) === toNumber(player?.id));
 
-		return buildPlayerAward(player, baseUrl, match);
+		return buildPlayerAward(player, baseUrl, match, teams);
 	});
 }
 
@@ -393,8 +398,8 @@ export function buildMatch({
 	match.result = buildResult(header, status, match.teams);
 	const awardSource = commHeader?.playersOfTheMatch?.length ? commHeader : header;
 	const awardFallback = awardSource === commHeader ? header : commHeader;
-	match.playerOfMatch = buildAwardsWithFallback(awardSource?.playersOfTheMatch, awardFallback?.playersOfTheMatch, baseUrl);
-	match.playerOfSeries = buildAwardsWithFallback(awardSource?.playersOfTheSeries, awardFallback?.playersOfTheSeries, baseUrl);
+	match.playerOfMatch = buildAwardsWithFallback(awardSource?.playersOfTheMatch, awardFallback?.playersOfTheMatch, baseUrl, match.teams);
+	match.playerOfSeries = buildAwardsWithFallback(awardSource?.playersOfTheSeries, awardFallback?.playersOfTheSeries, baseUrl, match.teams);
 	match.inningsSummary = scorecardJson ? inningsFromScorecard(scorecardJson, format) : inningsFromHome(homeInfo, homeMatch, format);
 	// The home feed drops finished matches (or keeps the chase line: 151352 ended
 	// with shortStatus "England need 7 runs in 50 balls"), so give cards a short

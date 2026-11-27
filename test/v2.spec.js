@@ -583,6 +583,36 @@ describe('match assembly', () => {
 		]);
 	});
 
+	it('drops a POM team name that belongs to neither side', () => {
+		const match = buildMatch({
+			header: {
+				matchId: 13,
+				matchFormat: 'T20',
+				state: 'Complete',
+				status: 'Perth Scorchers Women won by 17 runs',
+				team1: { id: 360, name: 'Perth Scorchers Women', shortName: 'PRSW' },
+				team2: { id: 357, name: 'Hobart Hurricanes Women', shortName: 'HBHW' },
+				playersOfTheMatch: [{ id: 24937, name: 'Freya Kemp', teamId: 0, teamName: 'New Zealand Women', faceImageId: 1005618 }],
+			},
+			livescoreJson: null,
+			scorecardJson: { matchHeader: { state: 'Complete' }, scoreCard: [] },
+			commHeader: {
+				playersOfTheMatch: [{ id: 24937, name: 'Freya Kemp', battingSummary: '58(38)', bowlingSummary: '' }],
+			},
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.playerOfMatch).toEqual([
+			expect.objectContaining({
+				id: 24937,
+				teamId: null,
+				teamName: null,
+				batting: '58(38)',
+				bowling: null,
+			}),
+		]);
+	});
+
 	it('keeps the toss status before the first ball', () => {
 		const live = livescoreFixture({
 			inningsId: 1,

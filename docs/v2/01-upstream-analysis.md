@@ -309,8 +309,14 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
 12. **Duplicate wicket announcements** in commentary (INFO "THATS OUT!!").
 13. **POM is split across headers**: the scorecard header has teamId/teamName
     but no summaries, the comm header has battingSummary/bowlingSummary
-    ("5-12", "" for a batter) but no team at all; teamId 0 means unknown.
-    It also appears minutes after the last ball (8m17s in 151352).
+    ("5-12", "" for a batter) but no team at all. teamId is **always 0** (unknown),
+    and teamName is the player's **national side**, not the side in the match:
+    162951 (WBBL, PRSW vs HBHW) returned Freya Kemp with teamName "New Zealand
+    Women", 151352 returned "England" (coincidentally a real side there), and
+    166697 (South Australia vs Victoria) returned "Australia". v2 drops the name
+    unless it matches one of the two teams actually playing.
+    It also appears minutes after the last ball: **8m17s** on 151352, **22m00s**
+    on 162951.
 14. **matchUdrs.team1Id = batting team**, team2Id = bowling team.
 15. **ppData is an object**, can hold multiple powerplays, {} for Tests.
 16. **revisedOvers** is the only structured DLS signal, and it lands before

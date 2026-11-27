@@ -256,6 +256,12 @@ reduced to 16 Overs DLS Target 93)". Use type, winnerTeamId and margin.
 teamId/teamName can be 0/"" when upstream omits them; faceImageUrl is null if
 upstream has no faceImageId.
 
+For awards (playerOfMatch, playerOfSeries), teamId is null: upstream always
+sends 0 there. teamName is kept only when it names one of the two sides in this
+match, because upstream puts the player's **national** side there (162951, a
+WBBL game, returned "New Zealand Women"). batting/bowling are the header
+summary strings with "" turned into null.
+
 ### 6.5 InningsSummary
 
 ```json
