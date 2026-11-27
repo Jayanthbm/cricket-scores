@@ -646,6 +646,25 @@ describe('match assembly', () => {
 		]);
 	});
 
+	it('keeps the national side of an A team in an award', () => {
+		const match = buildMatch({
+			header: {
+				matchId: 15,
+				matchFormat: 'ODI',
+				state: 'Complete',
+				status: 'Pakistan A won by 5 wkts',
+				team1: { id: 288, name: 'Bangladesh A', shortName: 'BANA' },
+				team2: { id: 325, name: 'Pakistan A', shortName: 'PAKA' },
+				playersOfTheMatch: [{ id: 41113, name: 'Hasan Nawaz', teamId: 0, teamName: 'Pakistan' }],
+			},
+			livescoreJson: null,
+			scorecardJson: { matchHeader: { state: 'Complete' }, scoreCard: [] },
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.playerOfMatch[0]).toEqual(expect.objectContaining({ name: 'Hasan Nawaz', teamId: null, teamName: 'Pakistan' }));
+	});
+
 	it('keeps the toss status before the first ball', () => {
 		const live = livescoreFixture({
 			inningsId: 1,

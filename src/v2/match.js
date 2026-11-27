@@ -151,6 +151,20 @@ function summaryText(value) {
 	return text || null;
 }
 
+function sameTeamName(team, rawName) {
+	if (!rawName) {
+		return false;
+	}
+
+	if (team?.name === rawName || team?.shortName === rawName) {
+		return true;
+	}
+
+	const name = String(team?.name || '').toLowerCase();
+
+	return name.startsWith(`${String(rawName).toLowerCase()} `);
+}
+
 function buildPlayerAward(player, baseUrl, fallbackPlayer, teams = []) {
 	const imageId = toNumber(player?.faceImageId) ?? toNumber(fallbackPlayer?.faceImageId);
 	const name = player?.fullName || player?.name || fallbackPlayer?.fullName || '';
@@ -160,9 +174,12 @@ function buildPlayerAward(player, baseUrl, fallbackPlayer, teams = []) {
 	// Upstream's teamName is the player's national side, not the side in this
 	// match: 162951's WBBL POM came back as "New Zealand Women" while the teams
 	// were Perth Scorchers and Hobart Hurricanes. Keep it only when it names one
-	// of the two sides actually playing (151352's "England" survives).
+	// of the two sides actually playing (151352's "England" survives), including
+	// the national side of an A team (177214 sent "Pakistan" for Pakistan A).
+	// A prefix match keeps that and still rejects "Australia" against South
+	// Australia.
 	const rawTeamName = player?.teamName || fallbackPlayer?.teamName || null;
-	const teamName = rawTeamName && teams.some((team) => team.name === rawTeamName || team.shortName === rawTeamName) ? rawTeamName : null;
+	const teamName = rawTeamName && teams.some((team) => sameTeamName(team, rawTeamName)) ? rawTeamName : null;
 
 	return {
 		id: toNumber(player?.id),
