@@ -179,7 +179,7 @@ On livescore-only payloads a Hundred innings sends overs as the ball count, and
 v2 turns that back into "9.8".
 | runRate | number | 2 decimals |
 | declared | boolean | innings declared |
-| followOn | boolean | innings is a follow-on |
+| followOn | boolean | innings is a follow-on (147931 innings 3) |
 | display | string | "318/2 (41.3)" - render this |
 | displayShort | string | "318/2" |
 

@@ -132,6 +132,23 @@ describe('non standard formats', () => {
 		expect(card.map((innings) => innings.score.display)).toEqual(['135/7 (10)', '138/4 (9.8)']);
 		expect(card[1].score.balls).toBe(98);
 	});
+
+	it('marks a follow-on innings', () => {
+		const card = buildScorecard({
+			matchHeader: { matchFormat: 'TEST' },
+			scoreCard: [
+				{
+					inningsId: 3,
+					batTeamDetails: { batTeamId: 4, batTeamName: 'Australia', batTeamShortName: 'AUS' },
+					bowlTeamDetails: { bowlTeamId: 11, bowlTeamName: 'South Africa', bowlTeamShortName: 'RSA' },
+					scoreDetails: { runs: 295, wickets: 10, overs: 107.1, ballNbr: 643, isDeclared: false, isFollowOn: true },
+				},
+			],
+		});
+
+		expect(card[0].score).toMatchObject({ followOn: true, display: '295/10 (107.1)' });
+		expect(card[0].isFollowOn).toBe(true);
+	});
 });
 
 function livescoreFixture(overrides = {}) {

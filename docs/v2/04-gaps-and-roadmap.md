@@ -113,7 +113,6 @@ even when the match is not in /api/home), and it becomes a fixture + test:
 - rain stopping play (Delay / Interrupted), or a DLS-revised chase mid-innings
 - an abandoned match or a no-result
 - a tied match, and a super over
-- a Test with a follow-on innings
 - any live T10 / The Hundred / Sixes match (finished ones are covered by
   176250, 144673 and 175110)
 - an ODI that is live (we only captured a completed one)
@@ -147,8 +146,9 @@ behaviour or becomes a code change.
     live.target.ballsRemaining match the scoreboard's "in N balls"?
 11. For a live T10/Hundred/Sixes innings, does livescore expose the same ball
     count as scoreDetails.ballNbr (the Hundred is only verified finished)?
-12. For a follow-on innings, is followOn true on the right innings, and does
-    the Test live.test.leadRuns/trailRuns sign flip correctly?
+12. ~~Is followOn true on the right innings?~~ Yes: 147931 has Australia's
+    second innings as match innings 3 with followOn true, and lead/trail still
+    came from the status text on the live days.
 13. Does winProbability ever appear for Tests or ODIs, or only some leagues?
 14. How late does playersOfTheMatch appear after completion (minutes)?
 15. Does the commentary ever exceed ~25 entries, or change innings mid-list?

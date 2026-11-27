@@ -113,7 +113,9 @@ Test-specific behaviour:
 
 - score.overs is "97.1", "135.3", ... with no cap; runRate still applies.
 - declared / followOn flags are on every score object (from isDeclared /
-  isFollowOn), so "494/7d" is data, not string parsing.
+  isFollowOn), so "494/7d" is data, not string parsing. 147931 is the verified
+  follow-on: Australia were bowled out for 99, batted again at 295/10 (inningsId
+  3, `followOn: true`) and lost by an innings and 31.
 - live.test = { day, inningsNumber, teamInningsNumber, leadRuns, trailRuns, target }:
   - day = "Day N" from the status text, else header.dayNumber
   - inningsNumber = which innings of the match is being played (1-4, equals
@@ -136,15 +138,15 @@ Legend: **yes** = real payload captured and asserted; **toss** = toss data
 verified but the TOSS _state_ was only captured on a Test; **-** = not
 applicable to the format; **no** = implemented, waiting for a payload.
 
-| format      | SCHEDULED | TOSS | LIVE    | SESSION_BREAK | INNINGS_BREAK | STUMPS  | DELAYED | COMPLETE | ABANDONED | evidence                                                                                                                                                                                                                                                                                                                                      |
-| ----------- | --------- | ---- | ------- | ------------- | ------------- | ------- | ------- | -------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | yes (2)   | 151352 Preview + 151374/175283 Upcoming, 178440 delayed before and after the toss (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT, 161476 + 162088 abandoned without a toss, 161487 no result (state COMPLETE, result NO_RESULT)                                                       |
-| ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (3)  | yes (1)   | 177210 chase won by 8 wkts, 161245 DLS-reduced chase won by 5 wkts, 161256 won by 4 runs (DLS), 161260 abandoned after the toss with no innings                                                                                                                                                                                               |
-| TEST        | yes (2)   | yes  | yes (3) | yes (1)       | yes (2)       | yes (4) | no      | yes (5)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 166697 live day 4 then innings break on day 4 (lead 147), 171340 live day 1 then innings break after the 1st innings, 147964 innings win + declaration, 161285 + 166687 draws, 166643 draw with a 4th-innings chase |
-| T10         | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 176250 Abu Dhabi T10, labelled "T20" upstream, 60-ball limit                                                                                                                                                                                                                                                                                  |
-| THE_HUNDRED | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 144673 (format "HUN"), 100-ball limit, overs "9.8" = 9 sets + 8 balls                                                                                                                                                                                                                                                                         |
-| SIXES       | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 175110 Hong Kong Sixes, labelled "T20" upstream, 36-ball (6 over) innings                                                                                                                                                                                                                                                                     |
-| OTHER       | no        | no   | no      | no            | no            | -       | no      | no       | no        | falls through to no ball limit                                                                                                                                                                                                                                                                                                                |
+| format      | SCHEDULED | TOSS | LIVE    | SESSION_BREAK | INNINGS_BREAK | STUMPS  | DELAYED | COMPLETE | ABANDONED | evidence                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------- | --------- | ---- | ------- | ------------- | ------------- | ------- | ------- | -------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | yes (2)   | 151352 Preview + 151374/175283 Upcoming, 178440 delayed before and after the toss (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT, 161476 + 162088 abandoned without a toss, 161487 no result (state COMPLETE, result NO_RESULT)                                                                                          |
+| ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (3)  | yes (1)   | 177210 chase won by 8 wkts, 161245 DLS-reduced chase won by 5 wkts, 161256 won by 4 runs (DLS), 161260 abandoned after the toss with no innings                                                                                                                                                                                                                                  |
+| TEST        | yes (2)   | yes  | yes (3) | yes (1)       | yes (2)       | yes (4) | no      | yes (6)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 166697 live day 4 then innings break on day 4 (lead 147), 171340 live day 1 then innings break after the 1st innings, 147964 innings win + declaration, 147931 follow-on + innings and 31, 161285 + 166687 draws, 166643 draw with a 4th-innings chase |
+| T10         | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 176250 Abu Dhabi T10, labelled "T20" upstream, 60-ball limit                                                                                                                                                                                                                                                                                                                     |
+| THE_HUNDRED | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 144673 (format "HUN"), 100-ball limit, overs "9.8" = 9 sets + 8 balls                                                                                                                                                                                                                                                                                                            |
+| SIXES       | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 175110 Hong Kong Sixes, labelled "T20" upstream, 36-ball (6 over) innings                                                                                                                                                                                                                                                                                                        |
+| OTHER       | no        | no   | no      | no            | no            | -       | no      | no       | no        | falls through to no ball limit                                                                                                                                                                                                                                                                                                                                                   |
 
 Format specific things that are verified by those captures:
 
@@ -167,8 +169,9 @@ Format specific things that are verified by those captures:
   and 26 overs. In both, scoreDetails.revisedOvers stayed 0 and the only DLS
   signal is the status/result text - see the DLS gap below.
 - **TEST**: day number, lead/trail (both directions: lead 106 in 166697, trail 158
-  and 88 in 171830/171817), innings number, declaration (147964 innings 2), no
-  ball limit, no powerplay, 2-4 innings in inningsSummary, no live target.
+  and 88 in 171830/171817), innings number, declaration (147964 innings 2,
+  147931 innings 1) and follow-on (147931 innings 3), no ball limit, no
+  powerplay, 2-4 innings in inningsSummary, no live target.
   Live coverage is three shapes: mid-session on day 1 with no lead yet (171340,
   228/6, leadRuns null), day 4 with a lead and three innings (166697,
   inningsNumber 3, teamInningsNumber 2), and stumps on 1 and 2 innings
@@ -206,7 +209,6 @@ no real payload behind it yet.
 | lunch or drinks break              | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload                                          |
 | a DLS chase in progress            | revisedOvers > 0 while batting; 161245/161256 prove it stays 0 once finished, so we still need a live rain-shortened chase |
 | a tied match, and a super over     | TIE result, isSuperOver, extra innings ids                                                                                 |
-| a Test follow-on innings           | score.followOn true is implemented but never observed                                                                      |
 | an ODI or T20 with winProbability  | only 175273 carried it so far                                                                                              |
 
 Doc 04 lists the questions each capture has to answer.
@@ -572,6 +574,34 @@ which is why this does not flip to TOSS.
 	"live": null
 }
 ```
+
+### COMPLETE (follow-on) - 147931 (Australia tour of South Africa, 2nd Test)
+
+```json
+{
+	"id": 147931,
+	"format": "TEST",
+	"state": "COMPLETE",
+	"status": "South Africa won by an innings and 31 runs",
+	"toss": { "winnerTeamName": "Australia", "decision": "BOWL" },
+	"result": { "type": "WIN", "winnerTeamShortName": "RSA", "margin": { "value": 31, "unit": "INNINGS_AND_RUNS" } },
+	"playerOfMatch": [{ "name": "Temba Bavuma", "batting": "179", "bowling": "DNB & DNB" }],
+	"teams": [
+		{ "shortName": "RSA", "score": "425/9d", "innings": [{ "display": "425/9d (127.1)", "declared": true }] },
+		{
+			"shortName": "AUS",
+			"score": "99/10 & 295/10",
+			"innings": [{ "display": "99/10 (42.3)" }, { "display": "295/10 (107.1)", "followOn": true }]
+		}
+	],
+	"live": null
+}
+```
+
+Note: Australia's second innings is match innings 3 (`inningsId: 3`) and carries
+`followOn: true`; inningsSummary keeps match order (RSA, AUS, AUS), which is what
+an FE needs to label the tabs. `playerOfMatch.bowling` can be "DNB & DNB" when
+the player did not bowl in either innings - do not split that string on " & ".
 
 ### ABANDONED - 161260 (3rd ODI, abandoned after the toss)
 
