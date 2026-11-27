@@ -245,23 +245,23 @@ upstream has no faceImageId.
 
 ### 6.6 Live
 
-| Field             | Type        | Null | Notes                                                                                                   |
-| ----------------- | ----------- | ---- | ------------------------------------------------------------------------------------------------------- |
-| inningsId         | number      | no   | current innings (0 before start); during an innings break it stays on the innings that just ended       |
-| battingTeam       | TeamRef     | yes  | { id, name, shortName }                                                                                 |
-| bowlingTeam       | TeamRef     | yes  |                                                                                                         |
-| score             | Score       | no   | current innings score                                                                                   |
-| target            | Target      | yes  | null when not chasing **and null once finished**                                                        |
-| partnership       | object      | yes  | { runs, balls, display }                                                                                |
-| lastWicket        | LastWicket  | yes  | null when no wicket fell                                                                                |
-| batsmen           | object      | no   | { striker: Batter/null, nonStriker: Batter/null }                                                       |
-| bowlers           | object      | no   | { striker: Bowler/null, nonStriker: Bowler/null }                                                       |
-| recentBalls       | string[]    | no   | tokens of the current over, oldest first                                                                |
-| recentPerformance | object[]    | no   | [{ label, runs, wickets }]                                                                              |
-| events            | string[]    | no   | e.g. ["over-break"], ["wicket"]                                                                         |
-| drs               | DRS         | yes  | null when the match has no UDRS                                                                         |
-| test              | TestContext | yes  | Tests only; leadRuns/trailRuns are null in a 4th-innings chase - use live.target                        |
-| updatedAt         | string      | yes  | ISO upstream response time, not the last ball: it keeps moving during a break while the score is frozen |
+| Field             | Type        | Null | Notes                                                                                                         |
+| ----------------- | ----------- | ---- | ------------------------------------------------------------------------------------------------------------- |
+| inningsId         | number      | no   | current innings (0 before start); during an innings break it stays on the innings that just ended             |
+| battingTeam       | TeamRef     | yes  | { id, name, shortName }                                                                                       |
+| bowlingTeam       | TeamRef     | yes  |                                                                                                               |
+| score             | Score       | no   | current innings score                                                                                         |
+| target            | Target      | yes  | null when not chasing **and null once finished**                                                              |
+| partnership       | object      | yes  | { runs, balls, display }; can lag a ball behind a wicket (175843 kept 22 (33) with the new batter still null) |
+| lastWicket        | LastWicket  | yes  | null when no wicket fell                                                                                      |
+| batsmen           | object      | no   | { striker: Batter/null, nonStriker: Batter/null }                                                             |
+| bowlers           | object      | no   | { striker: Bowler/null, nonStriker: Bowler/null }                                                             |
+| recentBalls       | string[]    | no   | tokens of the current over, oldest first                                                                      |
+| recentPerformance | object[]    | no   | [{ label, runs, wickets }]                                                                                    |
+| events            | string[]    | no   | e.g. ["over-break"], ["wicket"]                                                                               |
+| drs               | DRS         | yes  | null when the match has no UDRS                                                                               |
+| test              | TestContext | yes  | Tests only; leadRuns/trailRuns are null in a 4th-innings chase - use live.target                              |
+| updatedAt         | string      | yes  | ISO upstream response time, not the last ball: it keeps moving during a break while the score is frozen       |
 
 WinProbability sits on **match**, not on live, because upstream publishes it on
 the scorecard before the first ball and drops it again on some finished matches:
