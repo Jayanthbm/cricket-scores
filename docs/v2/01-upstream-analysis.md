@@ -288,8 +288,9 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
 6. **Player of the match appears late**: playersOfTheMatch is [] immediately
    after a win and populates minutes later (175273 finished -> []; 177210,
    completed earlier -> 1 entry).
-7. **winProbability** only exists on some live matches and vanishes at
-   completion.
+7. **winProbability** is optional per match and sits on the scorecard, so it
+   exists before the first ball (151352 at the toss) and is absent for others
+   (175843); it can vanish again at completion.
 8. **Home feed is featured-only** (~6 matches) and can omit live games.
 9. **Home state lags livescore** (observed "In Progress" in home while
    livescore already said "Complete"). Prefer livescore, fall back to home.
@@ -319,7 +320,7 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
 | empty lastWicket        | falls back to last FOW entry; lastWicket.source says which               |
 | FOW missing retired out | lastWicket.isLatest compares wicketNumber with wickets                   |
 | POM delay               | playerOfMatch[] may be empty; docs say "retry later / hub call"          |
-| winProbability gone     | live.winProbability null at completion                                   |
+| winProbability gone     | match.winProbability null at completion                                  |
 | no squads               | didNotBat[] + commentary INFO "Squads:" only; documented gap             |
 | commentary truncation   | commentary.entries is "recent", not full history                         |
 | duplicate wicket INFO   | dropped when text matches THATS OUT!!                                    |

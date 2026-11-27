@@ -211,7 +211,6 @@ no real payload behind it yet.
 | lunch or drinks break              | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload                                                                             |
 | a DLS-revised chase                | revisedOvers is 13 while a reduced T20I innings is live (178440) but 0 once finished (161245/161256); we still need a 2nd innings batting to a revised target |
 | a tied match, and a super over     | TIE result, isSuperOver, extra innings ids                                                                                                                    |
-| an ODI or T20 with winProbability  | only 175273 carried it so far                                                                                                                                 |
 
 Doc 04 lists the questions each capture has to answer.
 
@@ -219,18 +218,18 @@ Doc 04 lists the questions each capture has to answer.
 
 What upstream returns and therefore what v2 can populate.
 
-| state               | livescore                                       | scorecard                                                                            | comm                      | v2 match fields that are meaningfully filled                                                                                                                                        |
-| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SCHEDULED (Preview) | yes (status "Match starts at ...", inningsId 0) | yes (header only; empty innings)                                                     | 204 or INFO-only (squads) | teams (no scores), series, venue, startTime, toss null, result null, playerOfMatch usually []                                                                                       |
-| TOSS                | yes (status "X opt to bat", no score)           | yes (scorecard header, tossResults; livescore may omit matchHeader - 175843, 151352) | INFO entries              | toss populated, both teams score null, isUpcoming true, live null                                                                                                                   |
-| LIVE                | yes                                             | yes                                                                                  | yes                       | everything: live.score/target/partnership/lastWicket/batsmen/bowlers/drs/winProbability, teams scores, isBatting. A Test 4th-innings chase sets live.target (166697: 148, need 131) |
-| SESSION_BREAK       | yes (status "Day 1: Tea Break")                 | yes                                                                                  | yes                       | everything LIVE has, but play is paused; rawState keeps Tea/Lunch/Drinks, the score freezes while live.updatedAt keeps moving (166697 tea lasted ~28 min on day 4)                  |
-| INNINGS_BREAK       | yes ("Day 4: Innings Break - lead by 147")      | yes                                                                                  | yes                       | live.score of the finished innings, target null, lastWicket + last partnership, inningsId still points at the innings that ended, isBatting false on both sides                     |
-| STUMPS              | yes (status "Day 3: Stumps - ...")              | yes                                                                                  | yes                       | live.test.day, leadRuns/trailRuns, inningsSummary 2-4 innings                                                                                                                       |
-| DELAYED             | yes (status "Rain delay" etc.)                  | yes                                                                                  | yes                       | live.score frozen, isDelayed true. A delay around the toss (178440) has no innings at all: live null, teams no scores, toss null before it and populated after                      |
-| COMPLETE            | yes (status = result text)                      | yes                                                                                  | yes                       | result, playerOfMatch (may lag), inningsSummary final, live.target null, winProbability null. A rain washout is COMPLETE + result NO_RESULT (161487), not ABANDONED                 |
-| ABANDONED           | yes (status "Match abandoned")                  | yes (header only, zero innings)                                                      | INFO-only map or 204      | result.type ABANDONED, no scores, inningsSummary [], toss may be present (161260) or null (161476, 162088), hasScorecard is still true                                              |
-| UNKNOWN             | whatever                                        | whatever                                                                             | whatever                  | teams + rawState only                                                                                                                                                               |
+| state               | livescore                                       | scorecard                                                                            | comm                      | v2 match fields that are meaningfully filled                                                                                                                                               |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| SCHEDULED (Preview) | yes (status "Match starts at ...", inningsId 0) | yes (header only; empty innings)                                                     | 204 or INFO-only (squads) | teams (no scores), series, venue, startTime, toss null, result null, playerOfMatch usually []                                                                                              |
+| TOSS                | yes (status "X opt to bat", no score)           | yes (scorecard header, tossResults; livescore may omit matchHeader - 175843, 151352) | INFO entries              | toss populated, both teams score null, isUpcoming true, live null                                                                                                                          |
+| LIVE                | yes                                             | yes                                                                                  | yes                       | everything: live.score/target/partnership/lastWicket/batsmen/bowlers/drs, match.winProbability, teams scores, isBatting. A Test 4th-innings chase sets live.target (166697: 148, need 131) |
+| SESSION_BREAK       | yes (status "Day 1: Tea Break")                 | yes                                                                                  | yes                       | everything LIVE has, but play is paused; rawState keeps Tea/Lunch/Drinks, the score freezes while live.updatedAt keeps moving (166697 tea lasted ~28 min on day 4)                         |
+| INNINGS_BREAK       | yes ("Day 4: Innings Break - lead by 147")      | yes                                                                                  | yes                       | live.score of the finished innings, target null, lastWicket + last partnership, inningsId still points at the innings that ended, isBatting false on both sides                            |
+| STUMPS              | yes (status "Day 3: Stumps - ...")              | yes                                                                                  | yes                       | live.test.day, leadRuns/trailRuns, inningsSummary 2-4 innings                                                                                                                              |
+| DELAYED             | yes (status "Rain delay" etc.)                  | yes                                                                                  | yes                       | live.score frozen, isDelayed true. A delay around the toss (178440) has no innings at all: live null, teams no scores, toss null before it and populated after                             |
+| COMPLETE            | yes (status = result text)                      | yes                                                                                  | yes                       | result, playerOfMatch (may lag), inningsSummary final, live.target null. A rain washout is COMPLETE + result NO_RESULT (161487), not ABANDONED                                             |
+| ABANDONED           | yes (status "Match abandoned")                  | yes (header only, zero innings)                                                      | INFO-only map or 204      | result.type ABANDONED, no scores, inningsSummary [], toss may be present (161260) or null (161476, 162088), hasScorecard is still true                                                     |
+| UNKNOWN             | whatever                                        | whatever                                                                             | whatever                  | teams + rawState only                                                                                                                                                                      |
 
 Practical rules that fall out of the matrix:
 
@@ -248,7 +247,9 @@ Practical rules that fall out of the matrix:
 - hasScorecard means "the scorecard endpoint answered", not "there are innings".
   161260 has hasScorecard true with inningsSummary []; render the scorecard tab
   from inningsSummary.inningsId.
-- winProbability is live-only and optional per match.
+- winProbability lives on match, not live: 151352 carries it at the toss
+  (AUS 46 / ENG 54, odds 2.1 / 1.8) and it stays outside the live block on
+  purpose. Optional per match.
 
 ## 5. Real examples (captured Nov 2026)
 
@@ -391,7 +392,6 @@ flip Preview -> TOSS landed 16 minutes before the first ball.
 			"source": "LIVESCORE"
 		},
 		"drs": null,
-		"winProbability": null,
 		"test": null
 	}
 }

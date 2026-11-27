@@ -1,5 +1,5 @@
 import { FINISHED_STATES, LIVE_STATES, MATCH_STATE, STATE_LABELS, detectFormat, normalizeState } from './constants';
-import { buildLive } from './live';
+import { buildLive, buildWinProbability } from './live';
 import { buildTeamCard, buildTeamRef } from './teams';
 import { formatDateTime, safeArray, scoreLine, slugify, toIso, toNumber } from './utils';
 
@@ -357,6 +357,11 @@ export function buildMatch({
 	const liveRelevant = !FINISHED_STATES.has(state);
 
 	match.live = liveRelevant ? buildLive({ livescoreJson, scorecardJson, teams: match.teams, format }) : null;
+	// Odds/probability exist before the first ball and after the last (upstream
+	// puts them on the scorecard), so they live on the match, not inside live.
+	match.winProbability = buildWinProbability(
+		livescoreJson?.miniscore?.winProbability || livescoreJson?.winProbability || scorecardJson?.winProbability,
+	);
 
 	// Upstream keeps the toss sentence as the status well into the new innings
 	// (175843 still said "Zimbabwe A opt to bowl" at 24/0 in 4), so once a ball

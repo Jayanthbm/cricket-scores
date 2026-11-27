@@ -168,7 +168,7 @@ function buildDrs(udrs, teams) {
 	};
 }
 
-function buildWinProbability(raw) {
+export function buildWinProbability(raw) {
 	if (!raw || (!raw.team1 && !raw.team2)) {
 		return null;
 	}
@@ -187,11 +187,19 @@ function buildWinProbability(raw) {
 				}
 			: null;
 
+	const odds = raw.odds
+		? {
+				team1: toNumber(raw.odds.team1_point),
+				team2: toNumber(raw.odds.team2_point),
+			}
+		: null;
+
 	return {
 		team1: side(raw.team1),
 		team2: side(raw.team2),
 		drawTiePercent: toNumber(raw.drawTiePercent, 0),
 		updatedOver: raw.lastUpdatedOver ?? null,
+		odds,
 	};
 }
 
@@ -315,7 +323,6 @@ export function buildLive({ livescoreJson, scorecardJson, teams = [], format }) 
 		wickets: toNumber(item.wkts, 0),
 	}));
 
-	const winProbability = buildWinProbability(livescoreJson?.winProbability || scorecardJson?.winProbability);
 	const livescoreWicket = parseLastWicket(miniscore.lastWicket);
 
 	return {
@@ -343,7 +350,6 @@ export function buildLive({ livescoreJson, scorecardJson, teams = [], format }) 
 		recentPerformance,
 		events,
 		drs: buildDrs(miniscore.matchUdrs, allTeams),
-		winProbability,
 		test: buildTestContext({
 			format: resolvedFormat,
 			status: miniscore.status,

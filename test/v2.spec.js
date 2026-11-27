@@ -229,6 +229,34 @@ function scorecardFixture() {
 }
 
 describe('match assembly', () => {
+	it('exposes win probability and odds outside the live block', () => {
+		const card = scorecardFixture();
+		card.matchHeader.state = 'Toss';
+		card.matchHeader.status = 'Team B opt to bowl';
+		card.winProbability = {
+			team1: { id: 1, percent: 46, name: 'Team A', shortName: 'A', color: '#DF9916|#F6B53C' },
+			team2: { id: 2, percent: 54, name: 'Team B', shortName: 'B', color: '#DC3838|#DC3838' },
+			drawTiePercent: 0,
+			lastUpdatedOver: 0,
+			odds: { team1_point: 2.1, team2_point: 1.8 },
+		};
+
+		const match = buildMatch({
+			header: card.matchHeader,
+			scorecardJson: { scoreCard: [], winProbability: card.winProbability },
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.state).toBe(MATCH_STATE.TOSS);
+		expect(match.live).toBe(null);
+		expect(match.winProbability).toMatchObject({
+			team1: { percent: 46, shortName: 'A', colors: ['#DF9916', '#F6B53C'] },
+			team2: { percent: 54 },
+			updatedOver: 0,
+			odds: { team1: 2.1, team2: 1.8 },
+		});
+	});
+
 	it('drops the live block for a finished match but keeps result and scores', () => {
 		const finished = livescoreFixture();
 		finished.miniscore.matchScoreDetails.state = 'Complete';
