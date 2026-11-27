@@ -201,6 +201,7 @@ function inningsFromScorecard(scorecardJson, format) {
 			runRate: innings.scoreDetails?.runRate,
 			declared: innings.scoreDetails?.isDeclared,
 			followOn: innings.scoreDetails?.isFollowOn,
+			revisedOvers: innings.scoreDetails?.revisedOvers,
 			format,
 		}),
 	}));

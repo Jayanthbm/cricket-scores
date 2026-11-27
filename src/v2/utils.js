@@ -84,7 +84,17 @@ function oversLabel(overs, balls, format) {
 	return ballsToOvers(balls);
 }
 
-export function scoreLine({ runs, wickets, overs, balls, runRate, declared = false, followOn = false, format = null } = {}) {
+export function scoreLine({
+	runs,
+	wickets,
+	overs,
+	balls,
+	runRate,
+	declared = false,
+	followOn = false,
+	revisedOvers = null,
+	format = null,
+} = {}) {
 	const totalRuns = toNumber(runs, 0);
 	const totalWickets = toNumber(wickets, 0);
 	const totalBalls = balls !== undefined && balls !== null ? toNumber(balls) : oversToBalls(overs);
@@ -104,6 +114,7 @@ export function scoreLine({ runs, wickets, overs, balls, runRate, declared = fal
 		runRate: rate,
 		declared: Boolean(declared),
 		followOn: Boolean(followOn),
+		revisedOvers: toNumber(revisedOvers) > 0 ? toNumber(revisedOvers) : null,
 		display: `${totalRuns}/${totalWickets}${declared ? 'd' : ''}${oversText ? ` (${oversText})` : ''}`,
 		displayShort: `${totalRuns}/${totalWickets}${declared ? 'd' : ''}`,
 	};

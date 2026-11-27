@@ -105,7 +105,10 @@ Two upstream quirks sit behind this table (144673, 176250, 175110):
 
 Only FORMAT_INNINGS_BALLS entries have a fixed limit; that limit is used to
 derive live.target.ballsRemaining, and it is overridden by
-scoreDetails.revisedOvers whenever that is > 0 (DLS / reduced overs).
+scoreDetails.revisedOvers whenever that is > 0 (DLS / reduced overs). That value
+is now also exposed as score.revisedOvers (null when not revised): 178440 sent 13
+while an innings reduced to 13 overs was still being played, while the finished
+DLS games 161245/161256 still send 0.
 scoreDetails.ballNbr is the authoritative ball count everywhere (it survives
 the Hundred's 10-ball sets and any odd decimal overs value).
 
@@ -140,7 +143,7 @@ applicable to the format; **no** = implemented, waiting for a payload.
 
 | format      | SCHEDULED | TOSS | LIVE    | SESSION_BREAK | INNINGS_BREAK | STUMPS  | DELAYED | COMPLETE | ABANDONED | evidence                                                                                                                                                                                                                                                                                                                                                                         |
 | ----------- | --------- | ---- | ------- | ------------- | ------------- | ------- | ------- | -------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | yes (2)   | 151352 Preview + 151374/175283 Upcoming, 178440 delayed before and after the toss (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT, 161476 + 162088 abandoned without a toss, 161487 no result (state COMPLETE, result NO_RESULT)                                                                                          |
+| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | yes (2)   | 151352 Preview + 151374/175283 Upcoming, 178440 delayed before and after the toss then live in a 13-over rain-reduced innings (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT, 161476 + 162088 abandoned without a toss, 161487 no result (state COMPLETE, result NO_RESULT)                                              |
 | ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (3)  | yes (1)   | 177210 chase won by 8 wkts, 161245 DLS-reduced chase won by 5 wkts, 161256 won by 4 runs (DLS), 161260 abandoned after the toss with no innings                                                                                                                                                                                                                                  |
 | TEST        | yes (2)   | yes  | yes (3) | yes (1)       | yes (2)       | yes (4) | no      | yes (6)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 166697 live day 4 then innings break on day 4 (lead 147), 171340 live day 1 then innings break after the 1st innings, 147964 innings win + declaration, 147931 follow-on + innings and 31, 161285 + 166687 draws, 166643 draw with a 4th-innings chase |
 | T10         | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 176250 Abu Dhabi T10, labelled "T20" upstream, 60-ball limit                                                                                                                                                                                                                                                                                                                     |
@@ -166,8 +169,10 @@ Format specific things that are verified by those captures:
   extras, partnerships. Both Indian tour ODIs were rain-shortened and decided by
   DLS: 161245's chase was reduced to 32 overs (won by 5 wkts, status carries the
   DLS target 143) and 161256 lost by 4 runs under DLS with the innings cut to 41
-  and 26 overs. In both, scoreDetails.revisedOvers stayed 0 and the only DLS
-  signal is the status/result text - see the DLS gap below.
+  and 26 overs. In both finished games scoreDetails.revisedOvers stayed 0, so
+  the only DLS signal is the status/result text; the live rain-reduced T20I final
+  (178440) did send revisedOvers 13 while batting, and v2 now exposes it. A
+  revised **chase** (2nd innings) is still missing.
 - **TEST**: day number, lead/trail (both directions: lead 106 in 166697, trail 158
   and 88 in 171830/171817), innings number, declaration (147964 innings 2,
   147931 innings 1) and follow-on (147931 innings 3), no ball limit, no
@@ -199,17 +204,17 @@ Format specific things that are verified by those captures:
 Send the id when you see one of these; every item below is implemented but has
 no real payload behind it yet.
 
-| required                           | why it matters                                                                                                             |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| T20 at TOSS                        | the TOSS state was only captured on a four-day Test; toss fields are verified, the state transition is not                 |
-| ODI live (any phase)               | the only ODI payload is a completed chase; mid-innings target/RRR/powerplay unverified                                     |
-| a live T10 / Hundred / Sixes match | only finished payloads so far; limits are applied but never exercised live                                                 |
-| an innings break                   | tests the state, whether target appears before the chase starts, and inningsId flipping                                    |
-| in-play rain delay / interruption  | DELAYED is verified before and after the toss (178440) but never mid-innings; need to see whether the score freezes        |
-| lunch or drinks break              | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload                                          |
-| a DLS chase in progress            | revisedOvers > 0 while batting; 161245/161256 prove it stays 0 once finished, so we still need a live rain-shortened chase |
-| a tied match, and a super over     | TIE result, isSuperOver, extra innings ids                                                                                 |
-| an ODI or T20 with winProbability  | only 175273 carried it so far                                                                                              |
+| required                           | why it matters                                                                                                                                                |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T20 at TOSS                        | the TOSS state was only captured on a four-day Test; toss fields are verified, the state transition is not                                                    |
+| ODI live (any phase)               | the only ODI payload is a completed chase; mid-innings target/RRR/powerplay unverified                                                                        |
+| a live T10 / Hundred / Sixes match | only finished payloads so far; limits are applied but never exercised live                                                                                    |
+| an innings break                   | tests the state, whether target appears before the chase starts, and inningsId flipping                                                                       |
+| in-play rain delay / interruption  | DELAYED is verified before and after the toss (178440) but never mid-innings; need to see whether the score freezes                                           |
+| lunch or drinks break              | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload                                                                             |
+| a DLS-revised chase                | revisedOvers is 13 while a reduced T20I innings is live (178440) but 0 once finished (161245/161256); we still need a 2nd innings batting to a revised target |
+| a tied match, and a super over     | TIE result, isSuperOver, extra innings ids                                                                                                                    |
+| an ODI or T20 with winProbability  | only 175273 carried it so far                                                                                                                                 |
 
 Doc 04 lists the questions each capture has to answer.
 
@@ -511,6 +516,34 @@ So a delay is DELAYED from the first rain signal until the first ball, whether o
 not the toss has happened: toss goes from null to populated, everything else
 stays empty. The raw state ("Delay") wins over the status text ("opt to bowl"),
 which is why this does not flip to TOSS.
+
+### LIVE (rain reduced) - 178440 (13-over innings after the delay)
+
+```json
+{
+	"id": 178440,
+	"format": "T20",
+	"state": "LIVE",
+	"status": "13 overs game due to rain",
+	"isLive": true,
+	"live": {
+		"inningsId": 1,
+		"score": { "display": "16/3 (4)", "runs": 16, "wickets": 3, "balls": 24, "revisedOvers": 13 },
+		"target": null,
+		"partnership": { "runs": 9, "balls": 10, "display": "9 (10)" }
+	},
+	"teams": [
+		{ "shortName": "IDNW", "score": null, "isBatting": false },
+		{ "shortName": "MLYW", "score": "16/3", "isBatting": true }
+	],
+	"inningsSummary": [{ "inningsId": 1, "score": { "display": "16/3 (4)", "revisedOvers": 13 } }]
+}
+```
+
+Note: the 13-over revision is available as `score.revisedOvers` while the innings
+is being played, so an FE can render "16/3 (4 of 13)" and progress from
+`balls / (revisedOvers * 6)`. A finished DLS match sends 0 there instead, which
+v2 reports as null.
 
 ### COMPLETE (draw) - 166643 (Sheffield Shield, 4th innings abandoned as a draw)
 

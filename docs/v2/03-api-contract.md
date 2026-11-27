@@ -180,6 +180,7 @@ v2 turns that back into "9.8".
 | runRate | number | 2 decimals |
 | declared | boolean | innings declared |
 | followOn | boolean | innings is a follow-on (147931 innings 3) |
+| revisedOvers | number \| null | innings length after a rain/DLS revision (13 in 178440); null when upstream sends 0 |
 | display | string | "318/2 (41.3)" - render this |
 | displayShort | string | "318/2" |
 

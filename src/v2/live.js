@@ -249,6 +249,10 @@ export function buildLive({ livescoreJson, scorecardJson, teams = [], format }) 
 	const hundred = resolvedFormat === 'THE_HUNDRED';
 	const inningsScoreList = safeArray(miniscore.matchScoreDetails?.inningsScoreList);
 	const inningsScoreEntry = inningsScoreList.find((item) => toNumber(item.inningsId) === inningsId) || null;
+	// A rain-reduced innings carries its new length on the scorecard: 178440 sent
+	// revisedOvers 13 while the 13-over innings was still being played.
+	const currentInnings = safeArray(scorecardJson?.scoreCard).find((item) => toNumber(item.inningsId) === inningsId);
+	const revisedOvers = toNumber(currentInnings?.scoreDetails?.revisedOvers);
 	const { batting, bowling } = resolveTeams({ scorecardJson, teams, battingTeamId, inningsId, inningsScoreEntry });
 	const allTeams = teams.length ? teams : [batting, bowling].filter(Boolean);
 
@@ -258,6 +262,7 @@ export function buildLive({ livescoreJson, scorecardJson, teams = [], format }) 
 		overs: hundred ? null : miniscore.overs,
 		balls: hundred ? toNumber(miniscore.overs) : null,
 		runRate: miniscore.currentRunRate,
+		revisedOvers,
 		format: resolvedFormat,
 	});
 

@@ -28,6 +28,12 @@ describe('overs helpers', () => {
 
 		expect(score).toMatchObject({ runs: 318, wickets: 2, overs: '41.3', balls: 249, display: '318/2 (41.3)', displayShort: '318/2' });
 	});
+
+	it('keeps a rain revision but treats the 0 placeholder as no revision', () => {
+		expect(scoreLine({ runs: 16, wickets: 3, balls: 24, revisedOvers: 13 }).revisedOvers).toBe(13);
+		expect(scoreLine({ runs: 16, wickets: 3, balls: 24, revisedOvers: 0 }).revisedOvers).toBe(null);
+		expect(scoreLine({ runs: 16, wickets: 3, balls: 24 }).revisedOvers).toBe(null);
+	});
 });
 
 describe('timestamp normalisation', () => {
@@ -351,6 +357,16 @@ describe('live block', () => {
 			runs: 3,
 			balls: 9,
 		});
+	});
+
+	it('uses the revised overs as the innings limit', () => {
+		const card = scorecardFixture();
+		card.scoreCard[0].scoreDetails.revisedOvers = 13;
+
+		const live = buildLive({ livescoreJson: livescoreFixture({ requiredRunRate: 0 }), scorecardJson: card });
+
+		expect(live.score.revisedOvers).toBe(13);
+		expect(live.target).toMatchObject({ runs: 105, runsNeeded: 51, ballsRemaining: 24, requiredRunRate: 12.75 });
 	});
 
 	it('drops the chase target once the match is finished', () => {
