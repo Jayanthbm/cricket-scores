@@ -141,20 +141,40 @@ function buildToss(header, teams) {
 	};
 }
 
-function buildPlayerAward(player, baseUrl) {
-	const imageId = toNumber(player?.faceImageId);
-	const name = player?.fullName || player?.name || '';
+function summaryText(value) {
+	const text = typeof value === 'string' ? value.trim() : '';
+
+	return text || null;
+}
+
+function buildPlayerAward(player, baseUrl, fallbackPlayer) {
+	const imageId = toNumber(player?.faceImageId) ?? toNumber(fallbackPlayer?.faceImageId);
+	const name = player?.fullName || player?.name || fallbackPlayer?.fullName || '';
+	// The comm header carries the summaries but no team, the scorecard header
+	// carries the team but no summaries (151352); 0 is upstream's unknown team.
+	const teamId = toNumber(player?.teamId) || toNumber(fallbackPlayer?.teamId) || null;
+	const teamName = player?.teamName || fallbackPlayer?.teamName || null;
 
 	return {
 		id: toNumber(player?.id),
 		name: player?.name || name,
 		fullName: name,
-		teamId: toNumber(player?.teamId),
-		teamName: player?.teamName || null,
+		teamId,
+		teamName,
 		faceImageUrl: imageId ? `${baseUrl}/v2/player-icon/${imageId}/${slugify(name) || 'player'}` : null,
-		batting: player?.battingSummary ?? null,
-		bowling: player?.bowlingSummary ?? null,
+		batting: summaryText(player?.battingSummary) ?? summaryText(fallbackPlayer?.battingSummary),
+		bowling: summaryText(player?.bowlingSummary) ?? summaryText(fallbackPlayer?.bowlingSummary),
 	};
+}
+
+function buildAwardsWithFallback(primary, fallback, baseUrl) {
+	const other = Array.isArray(fallback) ? fallback : [];
+
+	return (Array.isArray(primary) ? primary : []).map((player) => {
+		const match = other.find((candidate) => toNumber(candidate?.id) === toNumber(player?.id));
+
+		return buildPlayerAward(player, baseUrl, match);
+	});
 }
 
 const SHORT_RESULT = {
@@ -372,8 +392,9 @@ export function buildMatch({
 	match.toss = buildToss(header, match.teams);
 	match.result = buildResult(header, status, match.teams);
 	const awardSource = commHeader?.playersOfTheMatch?.length ? commHeader : header;
-	match.playerOfMatch = buildAwards(awardSource?.playersOfTheMatch, baseUrl);
-	match.playerOfSeries = buildAwards(awardSource?.playersOfTheSeries, baseUrl);
+	const awardFallback = awardSource === commHeader ? header : commHeader;
+	match.playerOfMatch = buildAwardsWithFallback(awardSource?.playersOfTheMatch, awardFallback?.playersOfTheMatch, baseUrl);
+	match.playerOfSeries = buildAwardsWithFallback(awardSource?.playersOfTheSeries, awardFallback?.playersOfTheSeries, baseUrl);
 	match.inningsSummary = scorecardJson ? inningsFromScorecard(scorecardJson, format) : inningsFromHome(homeInfo, homeMatch, format);
 	// The home feed drops finished matches (or keeps the chase line: 151352 ended
 	// with shortStatus "England need 7 runs in 50 balls"), so give cards a short

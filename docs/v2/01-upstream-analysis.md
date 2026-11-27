@@ -307,8 +307,10 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
 10. **No squads/XI** anywhere; teamN.playerDetails is always [].
 11. **Commentary is truncated** to ~20-25 entries, current innings only.
 12. **Duplicate wicket announcements** in commentary (INFO "THATS OUT!!").
-13. **POM in scorecard header has no batting/bowling summary**; the same
-    array in the comm header does.
+13. **POM is split across headers**: the scorecard header has teamId/teamName
+    but no summaries, the comm header has battingSummary/bowlingSummary
+    ("5-12", "" for a batter) but no team at all; teamId 0 means unknown.
+    It also appears minutes after the last ball (8m17s in 151352).
 14. **matchUdrs.team1Id = batting team**, team2Id = bowling team.
 15. **ppData is an object**, can hold multiple powerplays, {} for Tests.
 16. **revisedOvers** is the only structured DLS signal, and it lands before

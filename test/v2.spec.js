@@ -442,6 +442,38 @@ describe('match assembly', () => {
 		expect(match.shortStatus).toBe('ENG won');
 	});
 
+	it('merges POM summaries from the comm header with the team from the scorecard', () => {
+		const match = buildMatch({
+			header: {
+				matchId: 12,
+				matchFormat: 'T20',
+				state: 'Complete',
+				status: 'England won by 7 wkts',
+				team1: { id: 4, name: 'Australia', shortName: 'AUS' },
+				team2: { id: 9, name: 'England', shortName: 'ENG' },
+				playersOfTheMatch: [{ id: 8512, name: 'Jamie Overton', teamId: 0, teamName: 'England', faceImageId: 848546 }],
+			},
+			livescoreJson: null,
+			scorecardJson: { matchHeader: { state: 'Complete' }, scoreCard: [] },
+			commHeader: {
+				playersOfTheMatch: [{ id: 8512, name: 'Jamie Overton', battingSummary: '', bowlingSummary: '5-12' }],
+			},
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.playerOfMatch).toEqual([
+			expect.objectContaining({
+				id: 8512,
+				name: 'Jamie Overton',
+				teamId: null,
+				teamName: 'England',
+				batting: null,
+				bowling: '5-12',
+				faceImageUrl: 'http://example.com/v2/player-icon/848546/jamie-overton',
+			}),
+		]);
+	});
+
 	it('keeps the toss status before the first ball', () => {
 		const live = livescoreFixture({
 			inningsId: 1,
