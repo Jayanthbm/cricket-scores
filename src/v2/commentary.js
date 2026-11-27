@@ -1,4 +1,31 @@
-import { scoreLine, stripHtml, toIso, toNumber } from './utils';
+import { scoreLine, stripHtml, toEpochIso, toIso, toNumber } from './utils';
+
+const BREAK_NOTICES = [
+	{ type: 'DRINKS', pattern: /drinks are (on the field|being taken)|drinks break/i },
+	{ type: 'TIMEOUT', pattern: /strategic timeout|time ?out/i },
+	{ type: 'RAIN', pattern: /covers? (are|come) (back )?on|rain (has )?(arrived|arrives|stopped|stops)|rain delay/i },
+];
+
+function latestBreak(entries) {
+	for (const entry of entries) {
+		if (entry.type === 'BALL' || entry.type === 'OVER') {
+			return null;
+		}
+
+		if (entry.type !== 'INFO') {
+			continue;
+		}
+
+		const text = entry.text || '';
+		const notice = BREAK_NOTICES.find((candidate) => candidate.pattern.test(text));
+
+		if (notice) {
+			return { type: notice.type, text, at: entry.timestamp };
+		}
+	}
+
+	return null;
+}
 
 const EXTRA_OUTCOMES = {
 	wide: 'WIDE',
@@ -122,7 +149,7 @@ function buildBallEntry(item, id) {
 		bowler: item.bowlerDetails ? { id: toNumber(item.bowlerDetails.playerId, 0), name: item.bowlerDetails.playerName || '' } : null,
 		text,
 		tags,
-		timestamp: toIso(item.timestamp),
+		timestamp: toEpochIso(item.timestamp),
 	};
 }
 
@@ -183,7 +210,7 @@ function buildOverEntry(item, id) {
 					figuresText: separator.bowlerObj.playerScore || '',
 				}
 			: null,
-		timestamp: toIso(item.timestamp),
+		timestamp: toEpochIso(item.timestamp),
 	};
 }
 
@@ -199,7 +226,7 @@ function buildInfoEntry(item, id) {
 		inningsId: toNumber(item.inningsId, 0),
 		text,
 		tags,
-		timestamp: toIso(item.timestamp),
+		timestamp: toEpochIso(item.timestamp),
 	};
 }
 
@@ -261,6 +288,12 @@ export function buildCommentary(commJson) {
 		// 24 entries all from innings 3, and 166697 had 23 all from innings 4).
 		latestInningsOnly: true,
 		entries,
-		updatedAt: toIso(commJson.responseLastUpdated),
+		// Drinks and timeouts never reach the livescore feed: 162951 froze at
+		// "51/3 (10)" with rawState In Progress and events [], while commentary
+		// carried "Drinks are on the field now". A break is therefore only
+		// visible here, and it ends as soon as a BALL/OVER entry is newer.
+		currentBreak: latestBreak(entries),
+		// responseLastUpdated arrives in seconds here, while entries carry ms.
+		updatedAt: toEpochIso(commJson.responseLastUpdated),
 	};
 }

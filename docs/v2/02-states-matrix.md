@@ -7,18 +7,18 @@ scorer's raw wording is.
 
 ## 1. The enum
 
-| state         | stateLabel    | Meaning                                           | Flags on match                                         |
-| ------------- | ------------- | ------------------------------------------------- | ------------------------------------------------------ |
-| SCHEDULED     | Upcoming      | not started, no toss                              | isUpcoming true                                        |
-| TOSS          | Toss          | toss done, no ball bowled                         | isUpcoming true                                        |
-| LIVE          | Live          | play in progress                                  | isLive true                                            |
-| SESSION_BREAK | Break         | lunch / tea / drinks interval, play resumes today | isLive true, rawState keeps "Tea" / "Lunch" / "Drinks" |
-| INNINGS_BREAK | Innings Break | between innings                                   | isLive true                                            |
-| STUMPS        | Stumps        | end of a day's play (Tests)                       | isLive true                                            |
-| DELAYED       | Delayed       | rain / bad light / interruption                   | isLive true, isDelayed true                            |
-| COMPLETE      | Completed     | result known                                      | isComplete true                                        |
-| ABANDONED     | Abandoned     | called off                                        | isComplete true                                        |
-| UNKNOWN       | Unknown       | raw state we could not classify                   | none                                                   |
+| state         | stateLabel    | Meaning                                           | Flags on match                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------- | ------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SCHEDULED     | Upcoming      | not started, no toss                              | isUpcoming true                                                                                                                                                                                                                                                                                                                                                                                       |
+| TOSS          | Toss          | toss done, no ball bowled                         | isUpcoming true                                                                                                                                                                                                                                                                                                                                                                                       |
+| LIVE          | Live          | play in progress                                  | isLive true                                                                                                                                                                                                                                                                                                                                                                                           |
+| SESSION_BREAK | Break         | lunch / tea / drinks interval, play resumes today | isLive true, rawState keeps "Tea" / "Lunch" / "Drinks" - but only when upstream labels it. A WBBL drinks break (162951) left rawState "In Progress", status "...need 117 runs in 60 balls", events [] and the score frozen at 51/3 (10) for 1m40s: the only signal was commentary INFO "Drinks are on the field now", so match state stayed LIVE and v2 exposes it as commentary.currentBreak instead |
+| INNINGS_BREAK | Innings Break | between innings                                   | isLive true                                                                                                                                                                                                                                                                                                                                                                                           |
+| STUMPS        | Stumps        | end of a day's play (Tests)                       | isLive true                                                                                                                                                                                                                                                                                                                                                                                           |
+| DELAYED       | Delayed       | rain / bad light / interruption                   | isLive true, isDelayed true                                                                                                                                                                                                                                                                                                                                                                           |
+| COMPLETE      | Completed     | result known                                      | isComplete true                                                                                                                                                                                                                                                                                                                                                                                       |
+| ABANDONED     | Abandoned     | called off                                        | isComplete true                                                                                                                                                                                                                                                                                                                                                                                       |
+| UNKNOWN       | Unknown       | raw state we could not classify                   | none                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 Derived booleans (all always present):
 
@@ -204,11 +204,11 @@ Format specific things that are verified by those captures:
 Send the id when you see one of these; every item below is implemented but has
 no real payload behind it yet.
 
-| required                           | why it matters                                                                    |
-| ---------------------------------- | --------------------------------------------------------------------------------- |
-| a live T10 / Hundred / Sixes match | only finished payloads so far; limits are applied but never exercised live        |
-| lunch or drinks break              | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload |
-| a tied match, and a super over     | TIE result, isSuperOver, extra innings ids                                        |
+| required                           | why it matters                                                                                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| a live T10 / Hundred / Sixes match | only finished payloads so far; limits are applied but never exercised live                                                                                               |
+| lunch break                        | only Tea (171331) is captured as a real SESSION_BREAK; drinks do **not** reach the livescore feed (162951, see above), so a lunch that behaves like drinks is still open |
+| a tied match, and a super over     | TIE result, isSuperOver, extra innings ids                                                                                                                               |
 
 Doc 04 lists the questions each capture has to answer.
 

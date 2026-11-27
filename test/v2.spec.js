@@ -974,6 +974,62 @@ describe('commentary', () => {
 		});
 
 		expect(commentary.entries).toHaveLength(1);
-		expect(commentary.entries[0]).toMatchObject({ type: 'INFO', text: 'Rain arrives, the covers come on.' });
+		// upstream sends seconds here (and milliseconds in real entries); both
+		// must land in this decade rather than 1970
+		expect(commentary.updatedAt).toBe('2025-11-10T05:46:40.000Z');
+		expect(commentary.entries[0]).toMatchObject({
+			type: 'INFO',
+			text: 'Rain arrives, the covers come on.',
+			timestamp: '2025-11-10T05:45:00.000Z',
+		});
+	});
+
+	it('reports a drinks break that the livescore feed never shows', () => {
+		const commentary = buildCommentary({
+			responseLastUpdated: 1795780584.84,
+			matchCommentary: {
+				1795780645000: {
+					commType: 'commentary',
+					commText: '20:30 Local Time, 12:30 GMT, 18:00 IST: Drinks are on the field now',
+					inningsId: 2,
+					timestamp: 1795780645000,
+				},
+				1795780640000: {
+					commType: 'commentary',
+					ballMetric: '10.6',
+					commText: 'Strange to Green, no run',
+					inningsId: 2,
+					event: ['run'],
+					timestamp: 1795780640000,
+				},
+			},
+		});
+
+		expect(commentary.currentBreak).toMatchObject({ type: 'DRINKS', at: '2026-11-27T11:57:25.000Z' });
+		expect(commentary.currentBreak.text).toContain('Drinks are on the field now');
+	});
+
+	it('clears currentBreak as soon as a ball is newer than the notice', () => {
+		const commentary = buildCommentary({
+			responseLastUpdated: 1795780584.84,
+			matchCommentary: {
+				1795780700000: {
+					commType: 'commentary',
+					ballMetric: '11.1',
+					commText: 'Peschel to Green, 1 run',
+					inningsId: 2,
+					event: ['run'],
+					timestamp: 1795780700000,
+				},
+				1795780645000: {
+					commType: 'commentary',
+					commText: 'Drinks are on the field now',
+					inningsId: 2,
+					timestamp: 1795780645000,
+				},
+			},
+		});
+
+		expect(commentary.currentBreak).toBeNull();
 	});
 });
