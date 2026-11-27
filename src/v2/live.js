@@ -1,4 +1,4 @@
-import { FINISHED_STATES, FORMAT_INNINGS_BALLS, normalizeFormat, normalizeState } from './constants';
+import { FINISHED_STATES, FORMAT_INNINGS_BALLS, detectFormat, normalizeState } from './constants';
 import { ballsToOvers, oversToBalls, round2, safeArray, scoreLine, stripHtml, toEpochIso, toNumber } from './utils';
 
 function normalizeOversText(overs) {
@@ -243,7 +243,10 @@ export function buildLive({ livescoreJson, scorecardJson, teams = [], format }) 
 		return null;
 	}
 
-	const resolvedFormat = normalizeFormat(format || miniscore.matchScoreDetails?.matchFormat);
+	const resolvedFormat = format || detectFormat({ matchFormat: miniscore.matchScoreDetails?.matchFormat });
+	// The Hundred livescore sends overs as a raw ball count (98), not as "."
+	// notation, so hand it over as `balls` and let scoreLine rebuild the label.
+	const hundred = resolvedFormat === 'THE_HUNDRED';
 	const inningsScoreList = safeArray(miniscore.matchScoreDetails?.inningsScoreList);
 	const inningsScoreEntry = inningsScoreList.find((item) => toNumber(item.inningsId) === inningsId) || null;
 	const { batting, bowling } = resolveTeams({ scorecardJson, teams, battingTeamId, inningsId, inningsScoreEntry });
@@ -252,8 +255,10 @@ export function buildLive({ livescoreJson, scorecardJson, teams = [], format }) 
 	const score = scoreLine({
 		runs: miniscore.batTeam?.teamScore,
 		wickets: miniscore.batTeam?.teamWkts,
-		overs: miniscore.overs,
+		overs: hundred ? null : miniscore.overs,
+		balls: hundred ? toNumber(miniscore.overs) : null,
 		runRate: miniscore.currentRunRate,
+		format: resolvedFormat,
 	});
 
 	const targetRuns = toNumber(miniscore.target, 0);

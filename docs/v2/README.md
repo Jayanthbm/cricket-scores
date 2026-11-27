@@ -63,7 +63,7 @@ GET /v2/matches query parameters:
 
 | Param    | Values                                                            | Default | Notes                                                                                                                                 |
 | -------- | ----------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| format   | T20, ODI, TEST, T10, THE_HUNDRED, OTHER                           | all     | normalised, case-insensitive                                                                                                          |
+| format   | T20, ODI, TEST, T10, THE_HUNDRED, SIXES, OTHER                    | all     | normalised, case-insensitive; T10/Sixes are also detected from the series name                                                        |
 | state    | live, upcoming, completed, delayed, or any enum (LIVE, TOSS, ...) | all     | comma-separated list allowed                                                                                                          |
 | seriesId | number                                                            | all     |                                                                                                                                       |
 | enrich   | none, live, full                                                  | live    | none = home feed only; live = + livescore for in-progress matches; full = + scorecard for every match (adds toss, result, POM, icons) |

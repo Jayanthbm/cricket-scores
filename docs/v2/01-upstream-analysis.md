@@ -181,7 +181,9 @@ playerDetails[] }, team2 { ... }, seriesDesc, seriesId, seriesName,
 venue { id, name, city, country, timezone, latitude, longitude }, alertType,
 livestreamEnabled.
 
-- matchFormat values seen: T20, ODI, TEST, T10 (also THE_HUNDRED upstream).
+- matchFormat values seen: T20, ODI, TEST, T10, HUN (The Hundred). It is not
+  trustworthy: the Abu Dhabi T10 and the Hong Kong Sixes both report "T20",
+  so the series name has to decide (see doc 02 section 3).
 - state values seen: Preview, Upcoming, Toss, In Progress, Tea, Stumps, Delay,
   Complete (+ expected
   Innings Break, Delay, Abandoned, No Result).

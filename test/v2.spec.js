@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildCommentary } from '../src/v2/commentary';
-import { MATCH_STATE, normalizeFormat, normalizeState } from '../src/v2/constants';
+import { MATCH_STATE, detectFormat, normalizeFormat, normalizeState } from '../src/v2/constants';
 import { buildLive } from '../src/v2/live';
 import { buildMatch } from '../src/v2/match';
 import { buildScorecard } from '../src/v2/scorecard';
@@ -74,7 +74,63 @@ describe('state normalisation', () => {
 		expect(normalizeFormat('ODM')).toBe('ODI');
 		expect(normalizeFormat('Test')).toBe('TEST');
 		expect(normalizeFormat('THE 100')).toBe('THE_HUNDRED');
+		expect(normalizeFormat('HUN')).toBe('THE_HUNDRED');
 		expect(normalizeFormat('List A')).toBe('OTHER');
+	});
+
+	it('trusts the series name when upstream mislabels the format', () => {
+		expect(detectFormat({ matchFormat: 'T20', seriesName: 'Abu Dhabi T10 2026' })).toBe('T10');
+		expect(detectFormat({ matchFormat: 'T20', seriesName: 'Hong Kong Sixes 2026', matchDesc: 'Group A' })).toBe('SIXES');
+		expect(detectFormat({ matchFormat: 'HUN', seriesName: "The Hundred Men's Competition 2026" })).toBe('THE_HUNDRED');
+		expect(detectFormat({ matchFormat: 'TEST', seriesName: 'Something T10 Sixes' })).toBe('TEST');
+		expect(detectFormat({ matchFormat: 'T20', seriesName: 'IPL 2026' })).toBe('T20');
+	});
+});
+
+describe('non standard formats', () => {
+	it('keeps the Hundred set.ball overs label next to the real ball count', () => {
+		const score = scoreLine({ runs: 138, wickets: 4, overs: 9.8, balls: 98, format: 'THE_HUNDRED' });
+
+		expect(score).toMatchObject({ runs: 138, wickets: 4, overs: '9.8', balls: 98, display: '138/4 (9.8)' });
+
+		const fromBalls = scoreLine({ runs: 135, wickets: 7, balls: 100, format: 'THE_HUNDRED' });
+
+		expect(fromBalls).toMatchObject({ overs: '10', balls: 100 });
+	});
+
+	it('derives the Hundred chase maths from a ball count', () => {
+		const live = buildLive({
+			livescoreJson: livescoreFixture({ overs: 98, target: 136, remRunsToWin: 3, requiredRunRate: 9 }),
+			scorecardJson: { scoreCard: [] },
+			format: 'THE_HUNDRED',
+		});
+
+		expect(live.score).toMatchObject({ overs: '9.8', balls: 98 });
+		expect(live.target).toMatchObject({ runs: 136, ballsRemaining: 2 });
+	});
+
+	it('labels a Hundred scorecard innings with its set.ball overs', () => {
+		const card = buildScorecard({
+			matchHeader: { matchFormat: 'HUN', seriesName: "The Hundred Men's Competition 2026" },
+			scoreCard: [
+				{
+					inningsId: 1,
+					batTeamDetails: { batTeamId: 606, batTeamName: 'Welsh Fire', batTeamShortName: 'WEF' },
+					bowlTeamDetails: { bowlTeamId: 605, bowlTeamName: 'Oval Invincibles', bowlTeamShortName: 'OVI' },
+					scoreDetails: { runs: 135, wickets: 7, overs: 10, ballNbr: 100, runRate: 1.35 },
+					earliestBatting: 0,
+				},
+				{
+					inningsId: 2,
+					batTeamDetails: { batTeamId: 605, batTeamName: 'Oval Invincibles', batTeamShortName: 'OVI' },
+					bowlTeamDetails: { bowlTeamId: 606, bowlTeamName: 'Welsh Fire', batTeamShortName: 'WEF' },
+					scoreDetails: { runs: 138, wickets: 4, overs: 9.8, ballNbr: 98, runRate: 1.41 },
+				},
+			],
+		});
+
+		expect(card.map((innings) => innings.score.display)).toEqual(['135/7 (10)', '138/4 (9.8)']);
+		expect(card[1].score.balls).toBe(98);
 	});
 });
 

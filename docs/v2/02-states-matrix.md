@@ -79,18 +79,34 @@ DELAYED - including a toss delayed by rain before any ball is bowled (178440).
 
 ## 3. Formats
 
-| upstream matchFormat          | v2 format   | Innings balls | Powerplay (as seen)                                   |
-| ----------------------------- | ----------- | ------------- | ----------------------------------------------------- |
-| T20, T20I                     | T20         | 120           | Mandatory 0.1-6 (a rain-reduced innings can be 0.1-4) |
-| ODI, ODM                      | ODI         | 300           | Mandatory 0.1-10                                      |
-| TEST                          | TEST        | none (no cap) | none (ppData {})                                      |
-| T10                           | T10         | 60            | usually none                                          |
-| THE_HUNDRED, HUNDRED, THE_100 | THE_HUNDRED | 100           | none                                                  |
-| anything else                 | OTHER       | none          | -                                                     |
+| upstream matchFormat               | v2 format   | Innings balls | Powerplay (as seen)                                   |
+| ---------------------------------- | ----------- | ------------- | ----------------------------------------------------- |
+| T20, T20I                          | T20         | 120           | Mandatory 0.1-6 (a rain-reduced innings can be 0.1-4) |
+| ODI, ODM                           | ODI         | 300           | Mandatory 0.1-10                                      |
+| TEST                               | TEST        | none (no cap) | none (ppData {})                                      |
+| T10                                | T10         | 60            | usually none                                          |
+| THE_HUNDRED, HUNDRED, HUN, THE_100 | THE_HUNDRED | 100           | none                                                  |
+| SIXES, HONG_KONG_SIXES             | SIXES       | 36            | none                                                  |
+| anything else                      | OTHER       | none          | -                                                     |
+
+Two upstream quirks sit behind this table (144673, 176250, 175110):
+
+- **matchFormat is not reliable.** The Abu Dhabi T10 is labelled "T20" and the
+  Hong Kong Sixes is labelled "T20" too. detectFormat() therefore looks for
+  \bt10\b or \bsixes\b in seriesName/matchDesc and overrides T20/OTHER with the
+  real format. TEST/ODI/Hundred are never overridden, so formatLabel can still
+  say "T20" while format says "T10" - that is upstream's label, kept verbatim.
+- **The Hundred counts in sets of 10 balls.** scoreDetails.overs is "9.8" (9
+  sets + 8 balls) next to ballNbr 98, so score.overs keeps that label and
+  score.balls is the raw ball count. Livescore sends overs as a plain ball
+  count (98) instead - buildLive passes it as balls, so a Hundred chase still
+  gets ballsRemaining = 100 - 98 = 2.
 
 Only FORMAT_INNINGS_BALLS entries have a fixed limit; that limit is used to
 derive live.target.ballsRemaining, and it is overridden by
 scoreDetails.revisedOvers whenever that is > 0 (DLS / reduced overs).
+scoreDetails.ballNbr is the authoritative ball count everywhere (it survives
+the Hundred's 10-ball sets and any odd decimal overs value).
 
 Test-specific behaviour:
 
@@ -124,8 +140,9 @@ applicable to the format; **no** = implemented, waiting for a payload.
 | T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | yes (2)   | 151352 Preview + 151374/175283 Upcoming, 178440 toss delayed by rain (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT, 161476 + 162088 abandoned without a toss, 161487 no result (state COMPLETE, result NO_RESULT) |
 | ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (3)  | yes (1)   | 177210 chase won by 8 wkts, 161245 DLS-reduced chase won by 5 wkts, 161256 won by 4 runs (DLS), 161260 abandoned after the toss with no innings                                                                                                                            |
 | TEST        | yes (2)   | yes  | yes (3) | yes (1)       | no            | yes (4) | no      | yes (5)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 171340 live day 1, 166697 live day 4 (lead 106), 147964 innings win + declaration, 161285 + 166687 draws, 166643 draw with a 4th-innings chase   |
-| T10         | no        | no   | no      | no            | no            | -       | no      | no       | no        | implemented only (60-ball limit)                                                                                                                                                                                                                                           |
-| THE_HUNDRED | no        | no   | no      | no            | no            | -       | no      | no       | no        | implemented only (100-ball limit)                                                                                                                                                                                                                                          |
+| T10         | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 176250 Abu Dhabi T10, labelled "T20" upstream, 60-ball limit                                                                                                                                                                                                               |
+| THE_HUNDRED | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 144673 (format "HUN"), 100-ball limit, overs "9.8" = 9 sets + 8 balls                                                                                                                                                                                                      |
+| SIXES       | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 175110 Hong Kong Sixes, labelled "T20" upstream, 36-ball (6 over) innings                                                                                                                                                                                                  |
 | OTHER       | no        | no   | no      | no            | no            | -       | no      | no       | no        | falls through to no ball limit                                                                                                                                                                                                                                             |
 
 Format specific things that are verified by those captures:
@@ -175,19 +192,18 @@ Format specific things that are verified by those captures:
 Send the id when you see one of these; every item below is implemented but has
 no real payload behind it yet.
 
-| required                          | why it matters                                                                                                             |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| T20 at TOSS                       | the TOSS state was only captured on a four-day Test; toss fields are verified, the state transition is not                 |
-| ODI live (any phase)              | the only ODI payload is a completed chase; mid-innings target/RRR/powerplay unverified                                     |
-| T10 match                         | format limit 60, no powerplay assumed                                                                                      |
-| THE_HUNDRED match                 | format limit 100, no powerplay assumed                                                                                     |
-| an innings break                  | tests the state, whether target appears before the chase starts, and inningsId flipping                                    |
-| in-play rain delay / interruption | DELAYED is only verified for a pre-toss delay (178440); need the mid-innings flavour and to see whether the score freezes  |
-| lunch or drinks break             | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload                                          |
-| a DLS chase in progress           | revisedOvers > 0 while batting; 161245/161256 prove it stays 0 once finished, so we still need a live rain-shortened chase |
-| a tied match, and a super over    | TIE result, isSuperOver, extra innings ids                                                                                 |
-| a Test follow-on innings          | score.followOn true is implemented but never observed                                                                      |
-| an ODI or T20 with winProbability | only 175273 carried it so far                                                                                              |
+| required                           | why it matters                                                                                                             |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| T20 at TOSS                        | the TOSS state was only captured on a four-day Test; toss fields are verified, the state transition is not                 |
+| ODI live (any phase)               | the only ODI payload is a completed chase; mid-innings target/RRR/powerplay unverified                                     |
+| a live T10 / Hundred / Sixes match | only finished payloads so far; limits are applied but never exercised live                                                 |
+| an innings break                   | tests the state, whether target appears before the chase starts, and inningsId flipping                                    |
+| in-play rain delay / interruption  | DELAYED is only verified for a pre-toss delay (178440); need the mid-innings flavour and to see whether the score freezes  |
+| lunch or drinks break              | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload                                          |
+| a DLS chase in progress            | revisedOvers > 0 while batting; 161245/161256 prove it stays 0 once finished, so we still need a live rain-shortened chase |
+| a tied match, and a super over     | TIE result, isSuperOver, extra innings ids                                                                                 |
+| a Test follow-on innings           | score.followOn true is implemented but never observed                                                                      |
+| an ODI or T20 with winProbability  | only 175273 carried it so far                                                                                              |
 
 Doc 04 lists the questions each capture has to answer.
 

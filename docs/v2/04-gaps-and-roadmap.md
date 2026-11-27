@@ -45,11 +45,11 @@ workaround today.
 | 10  | DRS block only exists for UDRS-enabled matches                 | drs is null for many leagues                                                                                            | hide widget when null                                                          | none                                                                                |
 | 11  | Team icon cache is per-isolate and only filled by /home        | icon may be null on /live or /commentary first call                                                                     | call /v2/matches once, or fall back to initials                                | persist imageId mapping in KV/D1                                                    |
 | 12  | 204 is overloaded (no content vs invalid id)                   | cannot distinguish "not started" from "bad id" without another call                                                     | we probe multiple endpoints and answer 404 only when all are empty             | none                                                                                |
-| 13  | THE_HUNDRED / T10 / super over payloads not validated          | ball limits and innings semantics are educated guesses                                                                  | format enum + limits defined                                                   | capture them (section 3)                                                            |
+| 13  | T10 / Hundred / Sixes only captured finished                   | live ball limits and powerplay behaviour unverified; upstream mislabels T10 and Sixes as "T20"                          | series-name format hints + ballNbr-based ball counts                           | capture one live match of each (section 3)                                          |
 | 14  | Innings Break / in-play Delayed / Tie not captured live        | normalisation is code-only for those                                                                                    | keyword fallback                                                               | capture them (section 3)                                                            |
 | 15  | status/shortStatus are English only                            | no i18n                                                                                                                 | -                                                                              | translate client-side                                                               |
 | 16  | DLS lives in the status text only                              | revisedOvers is 0 even for a finished rain-shortened innings, so a live DLS chase can fall back to the 50/20-over limit | read result.text / status; treat ballsRemaining as approximate for a DLS chase | needs a live rain-shortened chase to see whether revisedOvers appears while batting |
-| 16  | No "current innings" flag for upcoming/finished matches        | FE must infer from live or inningsSummary                                                                               | inningsSummary is ordered, last = current/most recent                          | add match.currentInningsId                                                          |
+| 17  | No "current innings" flag for upcoming/finished matches        | FE must infer from live or inningsSummary                                                                               | inningsSummary is ordered, last = current/most recent                          | add match.currentInningsId                                                          |
 
 ## 3. The 3-4 week capture exercise
 
@@ -115,7 +115,8 @@ even when the match is not in /api/home), and it becomes a fixture + test:
 - an abandoned match or a no-result
 - a tied match, and a super over
 - a Test with a follow-on innings
-- any T10 or The Hundred match (live if possible, plus the scorecard)
+- any live T10 / The Hundred / Sixes match (finished ones are covered by
+  176250, 144673 and 175110)
 - an ODI that is live (we only captured a completed one)
 
 ### 3.4 Questions the captures must answer
@@ -138,8 +139,8 @@ behaviour or becomes a code change.
    include them, and does target reset?
 10. For a DLS match, is revisedOvers always populated, and does
     live.target.ballsRemaining match the scoreboard's "in N balls"?
-11. For THE_HUNDRED, what are the ball limits (100?) and how are overs written
-    (e.g. "100" or "16.4")?
+11. For a live T10/Hundred/Sixes innings, does livescore expose the same ball
+    count as scoreDetails.ballNbr (the Hundred is only verified finished)?
 12. For a follow-on innings, is followOn true on the right innings, and does
     the Test live.test.leadRuns/trailRuns sign flip correctly?
 13. Does winProbability ever appear for Tests or ODIs, or only some leagues?

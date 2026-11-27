@@ -131,8 +131,11 @@ const FORMAT_ALIASES = {
 	ODM: 'ODI',
 	TEST: 'TEST',
 	T10: 'T10',
+	SIXES: 'SIXES',
+	HONG_KONG_SIXES: 'SIXES',
 	THE_HUNDRED: 'THE_HUNDRED',
 	HUNDRED: 'THE_HUNDRED',
+	HUN: 'THE_HUNDRED',
 	THE_100: 'THE_HUNDRED',
 };
 
@@ -145,6 +148,32 @@ export function normalizeFormat(rawFormat) {
 	return FORMAT_ALIASES[key] || 'OTHER';
 }
 
+// Upstream sometimes labels a tournament with a format it does not play: Abu
+// Dhabi T10 and the Hong Kong Sixes both arrive as matchFormat "T20". The series
+// name is the only hint, so it overrides T20/OTHER (never TEST/ODI/Hundred).
+const SERIES_FORMAT_HINTS = [
+	[/\bsixes\b/, 'SIXES'],
+	[/\bt10\b/, 'T10'],
+];
+
+export function detectFormat({ matchFormat, seriesName, matchDesc } = {}) {
+	const base = normalizeFormat(matchFormat);
+
+	if (base === 'TEST' || base === 'ODI' || base === 'THE_HUNDRED') {
+		return base;
+	}
+
+	const text = `${seriesName || ''} ${matchDesc || ''}`.toLowerCase();
+
+	for (const [pattern, format] of SERIES_FORMAT_HINTS) {
+		if (pattern.test(text)) {
+			return format;
+		}
+	}
+
+	return base;
+}
+
 // Maximum balls in a regular innings. Used to derive balls remaining for a chase.
 // TEST is intentionally absent (no fixed limit, and 4th innings has no over cap).
 export const FORMAT_INNINGS_BALLS = {
@@ -152,6 +181,7 @@ export const FORMAT_INNINGS_BALLS = {
 	ODI: 300,
 	T10: 60,
 	THE_HUNDRED: 100,
+	SIXES: 36,
 };
 
 // Team id -> image id cache, filled from /api/home. Upstream never returns team

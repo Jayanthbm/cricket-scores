@@ -124,8 +124,8 @@ header knows the match.
 | Field          | Type             | Null | Notes                                                                                                                              |
 | -------------- | ---------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | id             | number           | no   | Cricbuzz match id                                                                                                                  |
-| format         | string           | no   | T20, ODI, TEST, T10, THE_HUNDRED, OTHER                                                                                            |
-| formatLabel    | string           | no   | upstream label ("T20", "TEST", ...)                                                                                                |
+| format         | string           | no   | T20, ODI, TEST, T10, THE_HUNDRED, SIXES, OTHER                                                                                     |
+| formatLabel    | string           | no   | upstream label ("T20", "TEST", "HUN", ...); may disagree with format, see below                                                    |
 | matchDesc      | string           | no   | "2nd Test", "8th Match", "1st Semi-Final (A1 v B2)"                                                                                |
 | matchType      | string           | no   | "league", "International", "domestic", ...                                                                                         |
 | state          | string           | no   | enum, see doc 02                                                                                                                   |
@@ -155,21 +155,33 @@ header knows the match.
 | inningsSummary | InningsSummary[] | no   | ordered by inningsId, one entry per innings                                                                                        |
 | live           | Live             | yes  | null for upcoming/finished matches                                                                                                 |
 
+`format` is normalised and then corrected from the series name: upstream labels
+both the Abu Dhabi T10 and the Hong Kong Sixes as matchFormat "T20", so
+`/\bt10\b/` and `/\bsixes\b/` in series.name/matchDesc win over T20/OTHER.
+TEST, ODI and The Hundred are never overridden. Always branch on `format`,
+treat `formatLabel` as display-only.
+
 ### 6.2 Score
 
 Used by team cards, inningsSummary, innings and live.score.
 
-| Field        | Type    | Notes                                    |
-| ------------ | ------- | ---------------------------------------- |
-| runs         | number  |                                          |
-| wickets      | number  |                                          |
-| overs        | string  | "41.3", "50", "97.1" (x.6 normalised up) |
-| balls        | number  | integer balls bowled                     |
-| runRate      | number  | 2 decimals                               |
-| declared     | boolean | innings declared                         |
-| followOn     | boolean | innings is a follow-on                   |
-| display      | string  | "318/2 (41.3)" - render this             |
-| displayShort | string  | "318/2"                                  |
+| Field   | Type   | Notes                                    |
+| ------- | ------ | ---------------------------------------- |
+| runs    | number |                                          |
+| wickets | number |                                          |
+| overs   | string | "41.3", "50", "97.1" (x.6 normalised up) |
+| balls   | number | integer balls bowled                     |
+
+`balls` comes from scoreDetails.ballNbr when upstream sends it, so it stays
+correct where overs are written in another counting system. The Hundred is the
+only such case today: overs is "9.8" (9 sets of 10 balls + 8) and balls is 98.
+On livescore-only payloads a Hundred innings sends overs as the ball count, and
+v2 turns that back into "9.8".
+| runRate | number | 2 decimals |
+| declared | boolean | innings declared |
+| followOn | boolean | innings is a follow-on |
+| display | string | "318/2 (41.3)" - render this |
+| displayShort | string | "318/2" |
 
 ### 6.3 TeamCard
 

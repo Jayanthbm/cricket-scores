@@ -1,4 +1,4 @@
-import { FINISHED_STATES, LIVE_STATES, MATCH_STATE, STATE_LABELS, normalizeFormat, normalizeState } from './constants';
+import { FINISHED_STATES, LIVE_STATES, MATCH_STATE, STATE_LABELS, detectFormat, normalizeState } from './constants';
 import { buildLive } from './live';
 import { buildTeamCard, buildTeamRef } from './teams';
 import { formatDateTime, safeArray, scoreLine, slugify, toIso, toNumber } from './utils';
@@ -185,7 +185,7 @@ function buildVenue(header, homeInfo) {
 	};
 }
 
-function inningsFromScorecard(scorecardJson) {
+function inningsFromScorecard(scorecardJson, format) {
 	return safeArray(scorecardJson?.scoreCard).map((innings) => ({
 		inningsId: toNumber(innings.inningsId),
 		team: buildTeamRef({
@@ -201,11 +201,12 @@ function inningsFromScorecard(scorecardJson) {
 			runRate: innings.scoreDetails?.runRate,
 			declared: innings.scoreDetails?.isDeclared,
 			followOn: innings.scoreDetails?.isFollowOn,
+			format,
 		}),
 	}));
 }
 
-export function buildHomeInnings(homeTeamScore) {
+export function buildHomeInnings(homeTeamScore, format) {
 	const innings = [];
 
 	for (const key of ['inngs1', 'inngs2', 'inngs3']) {
@@ -221,6 +222,7 @@ export function buildHomeInnings(homeTeamScore) {
 				runs: raw.runs,
 				wickets: raw.wickets,
 				overs: raw.overs,
+				format,
 			}),
 		});
 	}
@@ -228,7 +230,7 @@ export function buildHomeInnings(homeTeamScore) {
 	return innings;
 }
 
-function inningsFromHome(homeInfo, homeMatch) {
+function inningsFromHome(homeInfo, homeMatch, format) {
 	const score = homeMatch?.matchScore || homeMatch?.match?.matchScore || {};
 	const pairs = [
 		[homeInfo?.team1, score.team1Score],
@@ -237,7 +239,7 @@ function inningsFromHome(homeInfo, homeMatch) {
 	const list = [];
 
 	for (const [team, teamScore] of pairs) {
-		for (const innings of buildHomeInnings(teamScore)) {
+		for (const innings of buildHomeInnings(teamScore, format)) {
 			list.push({
 				inningsId: innings.inningsId,
 				team: buildTeamRef(team),
@@ -249,8 +251,8 @@ function inningsFromHome(homeInfo, homeMatch) {
 	return list.sort((left, right) => (left.inningsId || 0) - (right.inningsId || 0));
 }
 
-function buildTeamCards({ header, scorecardJson, homeInfo, homeMatch, livescoreJson, baseUrl, state }) {
-	const inningsList = scorecardJson ? inningsFromScorecard(scorecardJson) : inningsFromHome(homeInfo, homeMatch);
+function buildTeamCards({ header, scorecardJson, homeInfo, homeMatch, livescoreJson, baseUrl, state, format }) {
+	const inningsList = scorecardJson ? inningsFromScorecard(scorecardJson, format) : inningsFromHome(homeInfo, homeMatch, format);
 	const battingTeamId = toNumber(livescoreJson?.miniscore?.batTeam?.teamId) || toNumber(homeInfo?.currBatTeamId);
 	const showBatting = LIVE_STATES.has(state);
 
@@ -308,7 +310,11 @@ export function buildMatch({
 	const status = livescoreJson?.miniscore?.status || header?.status || homeInfo?.status || '';
 	const rawState = livescoreJson?.miniscore?.matchScoreDetails?.state || header?.state || homeInfo?.state || '';
 	const state = normalizeState(rawState, status);
-	const format = normalizeFormat(header?.matchFormat || homeInfo?.matchFormat);
+	const format = detectFormat({
+		matchFormat: header?.matchFormat || homeInfo?.matchFormat,
+		seriesName: header?.seriesName || homeInfo?.seriesName,
+		matchDesc: header?.matchDescription || homeInfo?.matchDesc,
+	});
 	const startTime = header?.matchStartTimestamp || homeInfo?.startDate;
 	const endTime = header?.matchCompleteTimestamp || homeInfo?.endDate;
 
@@ -336,13 +342,13 @@ export function buildMatch({
 		hasScorecard: hasScorecard ?? Boolean(scorecardJson),
 	};
 
-	match.teams = buildTeamCards({ header, scorecardJson, homeInfo, homeMatch, livescoreJson, baseUrl, state });
+	match.teams = buildTeamCards({ header, scorecardJson, homeInfo, homeMatch, livescoreJson, baseUrl, state, format });
 	match.toss = buildToss(header, match.teams);
 	match.result = buildResult(header, status, match.teams);
 	const awardSource = commHeader?.playersOfTheMatch?.length ? commHeader : header;
 	match.playerOfMatch = buildAwards(awardSource?.playersOfTheMatch, baseUrl);
 	match.playerOfSeries = buildAwards(awardSource?.playersOfTheSeries, baseUrl);
-	match.inningsSummary = scorecardJson ? inningsFromScorecard(scorecardJson) : inningsFromHome(homeInfo, homeMatch);
+	match.inningsSummary = scorecardJson ? inningsFromScorecard(scorecardJson, format) : inningsFromHome(homeInfo, homeMatch, format);
 	// A finished match keeps its final scores in teams/inningsSummary; a live
 	// block there would only show stale batsmen/bowlers and a null target.
 	const liveRelevant = !FINISHED_STATES.has(state);

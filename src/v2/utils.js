@@ -56,12 +56,45 @@ export function ballsToOvers(balls) {
 	return remaining === 0 ? String(completedOvers) : `${completedOvers}.${remaining}`;
 }
 
-export function scoreLine({ runs, wickets, overs, balls, runRate, declared = false, followOn = false } = {}) {
+// The Hundred counts in sets of 10 balls: the scorecard sends overs "9.8" (9
+// sets + 8 balls) next to ballNbr 98, while livescore sends only 98. Keep the
+// scorecard form and rebuild it from the ball count when only that is available.
+function oversLabel(overs, balls, format) {
+	const hasOvers = overs !== null && overs !== undefined && overs !== '';
+
+	if (format === 'THE_HUNDRED') {
+		if (hasOvers) {
+			return String(overs);
+		}
+
+		if (balls === null) {
+			return null;
+		}
+
+		const sets = Math.floor(balls / 10);
+		const rest = balls % 10;
+
+		return rest === 0 ? String(sets) : `${sets}.${rest}`;
+	}
+
+	if (balls === null) {
+		return hasOvers ? String(overs) : null;
+	}
+
+	return ballsToOvers(balls);
+}
+
+export function scoreLine({ runs, wickets, overs, balls, runRate, declared = false, followOn = false, format = null } = {}) {
 	const totalRuns = toNumber(runs, 0);
 	const totalWickets = toNumber(wickets, 0);
 	const totalBalls = balls !== undefined && balls !== null ? toNumber(balls) : oversToBalls(overs);
-	const oversText = totalBalls === null ? (overs === null || overs === undefined ? null : String(overs)) : ballsToOvers(totalBalls);
-	const rate = runRate !== undefined && runRate !== null ? round2(runRate) : totalBalls ? round2((totalRuns * 6) / totalBalls) : null;
+	const oversText = oversLabel(overs, totalBalls, format);
+	const rate =
+		runRate !== undefined && runRate !== null
+			? round2(runRate)
+			: totalBalls
+				? round2(format === 'THE_HUNDRED' ? totalRuns / totalBalls : (totalRuns * 6) / totalBalls)
+				: null;
 
 	return {
 		runs: totalRuns,

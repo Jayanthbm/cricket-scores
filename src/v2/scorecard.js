@@ -1,3 +1,4 @@
+import { detectFormat } from './constants';
 import { ballsToOvers, oversToBalls, round2, safeArray, scoreLine, sortByNumberKey, toNumber } from './utils';
 
 const DISMISSAL_TYPES = {
@@ -197,7 +198,7 @@ function buildPartnerships(partnershipsData) {
 	}));
 }
 
-function buildInnings(innings) {
+function buildInnings(innings, format) {
 	const battingRows = sortByNumberKey(innings.batTeamDetails?.batsmenData, (key) => toNumber(String(key).replace('bat_', ''), 0)).map(
 		([, row]) => buildBattingRow(row),
 	);
@@ -212,6 +213,7 @@ function buildInnings(innings) {
 		runRate: innings.scoreDetails?.runRate,
 		declared: innings.scoreDetails?.isDeclared,
 		followOn: innings.scoreDetails?.isFollowOn,
+		format,
 	});
 
 	return {
@@ -240,7 +242,14 @@ function buildInnings(innings) {
 }
 
 export function buildScorecard(scorecardJson) {
+	const header = scorecardJson?.matchHeader;
+	const format = detectFormat({
+		matchFormat: header?.matchFormat,
+		seriesName: header?.seriesName,
+		matchDesc: header?.matchDescription,
+	});
+
 	return safeArray(scorecardJson?.scoreCard)
-		.map((innings) => buildInnings(innings))
+		.map((innings) => buildInnings(innings, format))
 		.sort((left, right) => (left.inningsId || 0) - (right.inningsId || 0));
 }
