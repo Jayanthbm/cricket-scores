@@ -144,7 +144,7 @@ header knows the match.
 | startTimeText  | string           | yes  | IST, "27 Nov 2026, 03:30 AM IST"                                                                                                   |
 | endTime        | string           | yes  | ISO UTC, only when upstream knows it                                                                                               |
 | dayNight       | boolean          | no   |                                                                                                                                    |
-| dayNumber      | number           | yes  | Tests only                                                                                                                         |
+| dayNumber      | number           | yes  | Tests only; may be null while the status still says "Day N" (171340)                                                               |
 | year           | number           | yes  |                                                                                                                                    |
 | hasScorecard   | boolean          | no   | true when a scorecard payload was available (an abandoned match can be true with zero innings - use inningsSummary to render tabs) |
 | teams          | TeamCard[2]      | no   | home order when known, else header order                                                                                           |
