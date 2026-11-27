@@ -6,6 +6,10 @@ import { formatDateTime, safeArray, scoreLine, slugify, toIso, toNumber } from '
 const BREAK_STATES = new Set([MATCH_STATE.INNINGS_BREAK, MATCH_STATE.SESSION_BREAK, MATCH_STATE.STUMPS]);
 
 const STALE_SHORT_STATUS = /opt to (bat|bowl)|^rain|need \d+ (runs?|to win)|innings break|stumps|delay|abandon/i;
+// A finished match also keeps a ball-by-ball chase label: 177214 ended with
+// shortStatus "Need 1 off 29b" after Pakistan A had already won. The live path
+// keeps those labels on purpose, so they only count as stale at the finish.
+const STALE_FINISHED_SHORT_STATUS = /opt to (bat|bowl)|^rain|need \d+ (runs?|to win|off \d+b)|innings break|stumps|delay|abandon/i;
 
 const RESULT_TYPES = {
 	win: 'WIN',
@@ -404,7 +408,7 @@ export function buildMatch({
 	// The home feed drops finished matches (or keeps the chase line: 151352 ended
 	// with shortStatus "England need 7 runs in 50 balls"), so give cards a short
 	// result label unless upstream already sent a result-shaped one.
-	if (match.isComplete && (!match.shortStatus || STALE_SHORT_STATUS.test(match.shortStatus))) {
+	if (match.isComplete && (!match.shortStatus || STALE_FINISHED_SHORT_STATUS.test(match.shortStatus))) {
 		match.shortStatus = shortResultText(match.result) || match.shortStatus;
 	}
 

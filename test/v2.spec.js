@@ -523,6 +523,39 @@ describe('match assembly', () => {
 		expect(match.shortStatus).toBe('ENG won');
 	});
 
+	it('replaces a "Need N off Nb" label once the match is finished', () => {
+		const match = buildMatch({
+			header: {
+				matchId: 14,
+				matchFormat: 'ODI',
+				state: 'Complete',
+				status: 'Pakistan A won by 5 wkts',
+				team1: { id: 288, name: 'Bangladesh A', shortName: 'BANA' },
+				team2: { id: 325, name: 'Pakistan A', shortName: 'PAKA' },
+				shortStatus: 'Need 1 off 29b',
+			},
+			livescoreJson: null,
+			scorecardJson: {
+				matchHeader: { state: 'Complete' },
+				scoreCard: [
+					{
+						inningsId: 1,
+						batTeamDetails: { batTeamId: 288, batTeamName: 'Bangladesh A', batTeamShortName: 'BANA' },
+						scoreDetails: { runs: 232, wickets: 8, overs: 50 },
+					},
+					{
+						inningsId: 2,
+						batTeamDetails: { batTeamId: 325, batTeamName: 'Pakistan A', batTeamShortName: 'PAKA' },
+						scoreDetails: { runs: 233, wickets: 5, overs: 45.2 },
+					},
+				],
+			},
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.shortStatus).toBe('PAKA won');
+	});
+
 	it('ignores the toss shortStatus at an innings break', () => {
 		const match = buildMatch({
 			header: {
