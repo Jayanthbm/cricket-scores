@@ -5,7 +5,7 @@ import { formatDateTime, safeArray, scoreLine, slugify, toIso, toNumber } from '
 
 const BREAK_STATES = new Set([MATCH_STATE.INNINGS_BREAK, MATCH_STATE.SESSION_BREAK, MATCH_STATE.STUMPS]);
 
-const STALE_SHORT_STATUS = /opt to (bat|bowl)|^rain|need \d+ runs?|innings break|stumps|delay|abandon/i;
+const STALE_SHORT_STATUS = /opt to (bat|bowl)|^rain|need \d+ (runs?|to win)|innings break|stumps|delay|abandon/i;
 
 const RESULT_TYPES = {
 	win: 'WIN',

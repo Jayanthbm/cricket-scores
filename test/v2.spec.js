@@ -421,6 +421,39 @@ describe('match assembly', () => {
 		expect(match.shortStatus).toBe('ENG 57/3 (6.3)');
 	});
 
+	it('replaces the "Need N to win" chase label with the score line', () => {
+		const live = livescoreFixture({
+			batTeam: { teamId: 357, teamScore: 5, teamWkts: 0 },
+			overs: 0.4,
+			target: 168,
+			remRunsToWin: 163,
+			matchScoreDetails: {
+				state: 'In Progress',
+				matchFormat: 'T20',
+				inningsScoreList: [
+					{ inningsId: 1, batTeamId: 360, score: 167, wickets: 6, overs: 20 },
+					{ inningsId: 2, batTeamId: 357, score: 5, wickets: 0, overs: 0.4 },
+				],
+			},
+		});
+		const match = buildMatch({
+			header: {
+				matchId: 14,
+				matchFormat: 'T20',
+				state: 'In Progress',
+				status: 'Hobart Hurricanes Women need 163 runs',
+				team1: { id: 360, name: 'Perth Scorchers Women', shortName: 'PRSW' },
+				team2: { id: 357, name: 'Hobart Hurricanes Women', shortName: 'HBHW' },
+				shortStatus: 'Need 164 to win',
+			},
+			livescoreJson: live,
+			scorecardJson: { scoreCard: [] },
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.shortStatus).toBe('HBHW 5/0 (0.4)');
+	});
+
 	it('replaces a chase shortStatus once the match is finished', () => {
 		const match = buildMatch({
 			header: {
