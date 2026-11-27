@@ -251,7 +251,8 @@ Practical rules that fall out of the matrix:
   from inningsSummary.inningsId.
 - winProbability lives on match, not live: 151352 carries it at the toss
   (AUS 46 / ENG 54, odds 2.1 / 1.8) and it stays outside the live block on
-  purpose. Optional per match.
+  purpose. On a Test it is three-way (161296 at stumps: NZ 48 / IND 43 /
+  draw 9, odds draw 10.6). Optional per match.
 
 ## 5. Real examples (captured Nov 2026)
 
@@ -312,6 +313,23 @@ before the 13:00 start (the 12:30 and 12:45 checks still read Preview).
 		{ "shortName": "IREA", "score": null, "isBatting": false }
 	],
 	"live": null
+}
+```
+
+### WIN PROBABILITY - 161296 (Test, stumps on day 1)
+
+The only three-way probability captured so far: NZ 246/5 still batting, and the
+draw is priced as a third outcome even though the match is nowhere near a result.
+
+```json
+{
+	"winProbability": {
+		"team1": { "id": 13, "name": "New Zealand", "shortName": "NZ", "percent": 48, "colors": ["#1E293B", "#999999"] },
+		"team2": { "id": 2, "name": "India", "shortName": "IND", "percent": 43, "colors": ["#0090FF", "#0090FF"] },
+		"drawTiePercent": 9,
+		"updatedOver": 85,
+		"odds": { "team1": 2, "team2": 2.2, "draw": 10.6 }
+	}
 }
 ```
 

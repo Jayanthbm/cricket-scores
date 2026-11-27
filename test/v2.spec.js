@@ -238,7 +238,7 @@ describe('match assembly', () => {
 			team2: { id: 2, percent: 54, name: 'Team B', shortName: 'B', color: '#DC3838|#DC3838' },
 			drawTiePercent: 0,
 			lastUpdatedOver: 0,
-			odds: { team1_point: 2.1, team2_point: 1.8 },
+			odds: { team1_point: 2.1, team2_point: 1.8, draw_point: 10.6 },
 		};
 
 		const match = buildMatch({
@@ -253,7 +253,7 @@ describe('match assembly', () => {
 			team1: { percent: 46, shortName: 'A', colors: ['#DF9916', '#F6B53C'] },
 			team2: { percent: 54 },
 			updatedOver: 0,
-			odds: { team1: 2.1, team2: 1.8 },
+			odds: { team1: 2.1, team2: 1.8, draw: 10.6 },
 		});
 	});
 

@@ -289,7 +289,8 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
    after a win and populates minutes later (175273 finished -> []; 177210,
    completed earlier -> 1 entry).
 7. **winProbability** is optional per match and sits on the scorecard, so it
-   exists before the first ball (151352 at the toss) and is absent for others
+   exists before the first ball (151352 at the toss), for Tests mid-match
+   (161296 at stumps: NZ 48 / IND 43 / draw 9), and is absent for others
    (175843); it can vanish again at completion.
 8. **Home feed is featured-only** (~6 matches) and can omit live games.
 9. **Home state lags livescore** (observed "In Progress" in home while

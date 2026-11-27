@@ -191,6 +191,8 @@ export function buildWinProbability(raw) {
 		? {
 				team1: toNumber(raw.odds.team1_point),
 				team2: toNumber(raw.odds.team2_point),
+				// Tests price the draw too (161296: 10.6); limited-overs omit it.
+				draw: toNumber(raw.odds.draw_point),
 			}
 		: null;
 

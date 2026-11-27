@@ -151,9 +151,9 @@ behaviour or becomes a code change.
     second innings as match innings 3 with followOn true, and lead/trail still
     came from the status text on the live days.
 13. ~~Does winProbability appear outside a few leagues?~~ It is on the
-    scorecard (with odds) for some T20s and ODIs - 151352 had it at the toss
-    (AUS 46 / ENG 54, odds 2.1 / 1.8) - and absent for others (175843). No Test
-    payload carried it yet.
+    scorecard (with odds) for some T20s, ODIs and Tests - 151352 had it at the
+    toss (AUS 46 / ENG 54, odds 2.1 / 1.8), 175843 has none. Tests are
+    three-way: 161296 at stumps is NZ 48 / IND 43 / draw 9 with odds draw 10.6.
 14. How late does playersOfTheMatch appear after completion (minutes)?
 15. Does the commentary ever exceed ~25 entries, or change innings mid-list?
 
