@@ -3,6 +3,8 @@ import { buildLive, buildWinProbability } from './live';
 import { buildTeamCard, buildTeamRef } from './teams';
 import { formatDateTime, safeArray, scoreLine, slugify, toIso, toNumber } from './utils';
 
+const BREAK_STATES = new Set([MATCH_STATE.INNINGS_BREAK, MATCH_STATE.SESSION_BREAK, MATCH_STATE.STUMPS]);
+
 const STALE_SHORT_STATUS = /opt to (bat|bowl)|^rain|need \d+ runs?|innings break|stumps|delay|abandon/i;
 
 const RESULT_TYPES = {
@@ -409,6 +411,17 @@ export function buildMatch({
 			if (!match.shortStatus || STALE_SHORT_STATUS.test(match.shortStatus)) {
 				match.shortStatus = `${batting.shortName} ${match.live.score.display}`;
 			}
+		}
+	}
+
+	// A break drops the home feed's short label (175843 sent shortStatus null at
+	// "Innings Break"), but the innings that just ended is the useful compact
+	// label for a list card.
+	if (!match.shortStatus && BREAK_STATES.has(state) && match.inningsSummary.length) {
+		const last = match.inningsSummary[match.inningsSummary.length - 1];
+
+		if (last?.team?.shortName && last?.score?.display) {
+			match.shortStatus = `${last.team.shortName} ${last.score.display}`;
 		}
 	}
 
