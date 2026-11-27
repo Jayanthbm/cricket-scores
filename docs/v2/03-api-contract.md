@@ -280,6 +280,10 @@ team1/team2 are the two sides in upstream's order (not batting order); percent i
 an integer share, colors are the two brand colours, updatedOver is the over the
 model last ran, odds are decimal prices and null when absent.
 
+It also appears outside internationals: the WBBL match 162951 carried it from the
+toss (43/57), moved to 50/50 after one over and 36/64 after a wicket — the model
+reacts ball by ball, not just at milestones.
+
 Tests split the probability three ways: 161296 at stumps on day 1 is NZ 48 /
 IND 43 with `drawTiePercent` 9, and its odds carry a third price
 (`"draw": 10.6`). Limited-overs matches leave both at 0 / null. The whole

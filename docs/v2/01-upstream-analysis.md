@@ -292,7 +292,10 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
    exists before the first ball (151352 at the toss), for Tests mid-match
    (161296 at stumps: NZ 48 / IND 43 / draw 9), and is absent for others
    (175843); it can vanish again at completion.
-8. **Home feed is featured-only** (~6 matches) and can omit live games.
+8. **Home feed is featured-only** (~6 matches) and can omit live games. A plain
+   /api/home fetch also returned an empty typeMatches list for the whole 15:00
+   window while v2 still had shortStatus and team icons for 177214/162951, so
+   emptiness there is not proof a match is unfeatured.
 9. **Home state lags livescore** (observed "In Progress" in home while
    livescore already said "Complete"). Prefer livescore, fall back to home.
 10. **No squads/XI** anywhere; teamN.playerDetails is always [].
