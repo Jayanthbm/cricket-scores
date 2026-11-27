@@ -259,7 +259,7 @@ upstream has no faceImageId.
 | events            | string[]       | no   | e.g. ["over-break"], ["wicket"]                                                                   |
 | drs               | DRS            | yes  | null when the match has no UDRS                                                                   |
 | winProbability    | WinProbability | yes  | null for most matches                                                                             |
-| test              | TestContext    | yes  | Tests only                                                                                        |
+| test              | TestContext    | yes  | Tests only; leadRuns/trailRuns are null in a 4th-innings chase - use live.target                  |
 | updatedAt         | string         | yes  | ISO, upstream last update                                                                         |
 
 Target:
@@ -270,6 +270,9 @@ Target:
 
 ballsRemaining uses the format innings limit or revisedOvers (DLS), so it is
 null for Tests. requiredRunsPerBall is null unless upstream provides it.
+runsNeeded prefers upstream remRunsToWin but falls back to runs - score.runs,
+because Tests send 0 there even while a 4th-innings chase is live (166697:
+target 148, runsNeeded 131). requiredRunRate is therefore null for a Test chase.
 
 LastWicket:
 

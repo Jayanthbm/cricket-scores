@@ -267,7 +267,9 @@ export function buildLive({ livescoreJson, scorecardJson, teams = [], format }) 
 	});
 
 	const targetRuns = toNumber(miniscore.target, 0);
-	const runsNeeded = toNumber(miniscore.remRunsToWin, 0);
+	// Tests send remRunsToWin 0 even while a 4th-innings chase is live (166697:
+	// "Victoria need 131 runs" with remRunsToWin 0), so fall back to target - scored.
+	const runsNeeded = targetRuns > 0 ? Math.max(toNumber(miniscore.remRunsToWin, 0), targetRuns - score.runs) : 0;
 	const limitBalls = inningsLimitBalls({ format: resolvedFormat, scorecardJson, inningsId });
 	const ballsRemaining = limitBalls !== null && score.balls !== null ? Math.max(limitBalls - score.balls, 0) : null;
 	const providedRequiredRate = toNumber(miniscore.requiredRunRate, 0);

@@ -100,7 +100,7 @@ super overs are rare).
 | TIE                                 | close chases                                       | hard to predict; harness catches it if running                 |
 | SUPER OVER                          | tied T20/ODI                                       | same                                                           |
 | DLS / revised overs                 | rain-affected matches                              | check scoreDetails.revisedOvers and live.target.ballsRemaining |
-| TEST 4th innings / follow-on        | day 4-5 of a Test                                  | watchlist the Test, capture at Stumps                          |
+| TEST 4th innings                    | day 4-5 of a Test (166697 covers the chase at tea) | watchlist the Test, capture at Stumps                          |
 | THE_HUNDRED / T10                   | competitions using them                            | watchlist one match                                            |
 | 2nd innings target at Innings Break | limited overs                                      | check whether target is already set before the chase starts    |
 

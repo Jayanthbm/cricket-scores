@@ -359,6 +359,22 @@ describe('live block', () => {
 		});
 	});
 
+	it('derives runs needed for a Test chase that sends 0', () => {
+		const ls = livescoreFixture({
+			remRunsToWin: 0,
+			target: 148,
+			requiredRunRate: 0,
+			batTeam: { teamId: 2, teamScore: 17, teamWkts: 3 },
+			overs: 8,
+		});
+		ls.miniscore.matchScoreDetails.matchFormat = 'TEST';
+
+		const live = buildLive({ livescoreJson: ls, scorecardJson: scorecardFixture() });
+
+		expect(live.target).toMatchObject({ runs: 148, runsNeeded: 131, ballsRemaining: null, requiredRunRate: null });
+		expect(live.score).toMatchObject({ runs: 17, wickets: 3, overs: '8' });
+	});
+
 	it('uses the revised overs as the innings limit', () => {
 		const card = scorecardFixture();
 		card.scoreCard[0].scoreDetails.revisedOvers = 13;
