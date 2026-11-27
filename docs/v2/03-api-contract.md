@@ -121,39 +121,39 @@ header knows the match.
 
 ### 6.1 Match
 
-| Field          | Type             | Null | Notes                                                                                                                              |
-| -------------- | ---------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| id             | number           | no   | Cricbuzz match id                                                                                                                  |
-| format         | string           | no   | T20, ODI, TEST, T10, THE_HUNDRED, SIXES, OTHER                                                                                     |
-| formatLabel    | string           | no   | upstream label ("T20", "TEST", "HUN", ...); may disagree with format, see below                                                    |
-| matchDesc      | string           | no   | "2nd Test", "8th Match", "1st Semi-Final (A1 v B2)"                                                                                |
-| matchType      | string           | no   | "league", "International", "domestic", ...                                                                                         |
-| state          | string           | no   | enum, see doc 02                                                                                                                   |
-| stateLabel     | string           | no   | "Live", "Break", "Stumps", "Completed", "Upcoming", ...                                                                            |
-| rawState       | string           | yes  | untouched upstream state                                                                                                           |
-| status         | string           | no   | human status line ("won by 8 wkts", "need 51 runs in 66 balls")                                                                    |
-| shortStatus    | string           | yes  | compact upstream status ("SLA won")                                                                                                |
-| isLive         | boolean          | no   | state in {LIVE, SESSION_BREAK, INNINGS_BREAK, STUMPS, DELAYED}                                                                     |
-| isUpcoming     | boolean          | no   | state in {SCHEDULED, TOSS}                                                                                                         |
-| isComplete     | boolean          | no   | state in {COMPLETE, ABANDONED}                                                                                                     |
-| isDelayed      | boolean          | no   | state = DELAYED                                                                                                                    |
-| isSuperOver    | boolean          | no   | status mentions "super over"                                                                                                       |
-| series         | object           | no   | { id, name, desc } (id 0 if unknown)                                                                                               |
-| venue          | object           | no   | { id, name, city, country, timezone, latitude, longitude, short } (latitude/longitude are strings, may be "")                      |
-| startTime      | string           | yes  | ISO UTC                                                                                                                            |
-| startTimeText  | string           | yes  | IST, "27 Nov 2026, 03:30 AM IST"                                                                                                   |
-| endTime        | string           | yes  | ISO UTC, only when upstream knows it                                                                                               |
-| dayNight       | boolean          | no   |                                                                                                                                    |
-| dayNumber      | number           | yes  | Tests only; may be null while the status still says "Day N" (171340)                                                               |
-| year           | number           | yes  |                                                                                                                                    |
-| hasScorecard   | boolean          | no   | true when a scorecard payload was available (an abandoned match can be true with zero innings - use inningsSummary to render tabs) |
-| teams          | TeamCard[2]      | no   | home order when known, else header order                                                                                           |
-| toss           | Toss             | yes  | null until the toss happened (or needs scorecard)                                                                                  |
-| result         | Result           | yes  | null until finished                                                                                                                |
-| playerOfMatch  | Player[]         | no   | [] when upstream has not published it yet                                                                                          |
-| playerOfSeries | Player[]         | no   | [] usually                                                                                                                         |
-| inningsSummary | InningsSummary[] | no   | ordered by inningsId, one entry per innings                                                                                        |
-| live           | Live             | yes  | null for upcoming/finished matches                                                                                                 |
+| Field          | Type             | Null | Notes                                                                                                                                        |
+| -------------- | ---------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| id             | number           | no   | Cricbuzz match id                                                                                                                            |
+| format         | string           | no   | T20, ODI, TEST, T10, THE_HUNDRED, SIXES, OTHER                                                                                               |
+| formatLabel    | string           | no   | upstream label ("T20", "TEST", "HUN", ...); may disagree with format, see below                                                              |
+| matchDesc      | string           | no   | "2nd Test", "8th Match", "1st Semi-Final (A1 v B2)"                                                                                          |
+| matchType      | string           | no   | "league", "International", "domestic", ...                                                                                                   |
+| state          | string           | no   | enum, see doc 02                                                                                                                             |
+| stateLabel     | string           | no   | "Live", "Break", "Stumps", "Completed", "Upcoming", ...                                                                                      |
+| rawState       | string           | yes  | untouched upstream state                                                                                                                     |
+| status         | string           | no   | human status line ("won by 8 wkts", "need 51 runs in 66 balls"); a stale toss sentence is replaced by "<team> <score>" once a ball is bowled |
+| shortStatus    | string           | yes  | compact upstream status ("SLA won")                                                                                                          |
+| isLive         | boolean          | no   | state in {LIVE, SESSION_BREAK, INNINGS_BREAK, STUMPS, DELAYED}                                                                               |
+| isUpcoming     | boolean          | no   | state in {SCHEDULED, TOSS}                                                                                                                   |
+| isComplete     | boolean          | no   | state in {COMPLETE, ABANDONED}                                                                                                               |
+| isDelayed      | boolean          | no   | state = DELAYED                                                                                                                              |
+| isSuperOver    | boolean          | no   | status mentions "super over"                                                                                                                 |
+| series         | object           | no   | { id, name, desc } (id 0 if unknown)                                                                                                         |
+| venue          | object           | no   | { id, name, city, country, timezone, latitude, longitude, short } (latitude/longitude are strings, may be "")                                |
+| startTime      | string           | yes  | ISO UTC                                                                                                                                      |
+| startTimeText  | string           | yes  | IST, "27 Nov 2026, 03:30 AM IST"                                                                                                             |
+| endTime        | string           | yes  | ISO UTC, only when upstream knows it                                                                                                         |
+| dayNight       | boolean          | no   |                                                                                                                                              |
+| dayNumber      | number           | yes  | Tests only; may be null while the status still says "Day N" (171340)                                                                         |
+| year           | number           | yes  |                                                                                                                                              |
+| hasScorecard   | boolean          | no   | true when a scorecard payload was available (an abandoned match can be true with zero innings - use inningsSummary to render tabs)           |
+| teams          | TeamCard[2]      | no   | home order when known, else header order                                                                                                     |
+| toss           | Toss             | yes  | null until the toss happened (or needs scorecard)                                                                                            |
+| result         | Result           | yes  | null until finished                                                                                                                          |
+| playerOfMatch  | Player[]         | no   | [] when upstream has not published it yet                                                                                                    |
+| playerOfSeries | Player[]         | no   | [] usually                                                                                                                                   |
+| inningsSummary | InningsSummary[] | no   | ordered by inningsId, one entry per innings                                                                                                  |
+| live           | Live             | yes  | null for upcoming/finished matches                                                                                                           |
 
 `format` is normalised and then corrected from the series name: upstream labels
 both the Abu Dhabi T10 and the Hong Kong Sixes as matchFormat "T20", so

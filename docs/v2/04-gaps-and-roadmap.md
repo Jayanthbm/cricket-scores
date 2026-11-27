@@ -116,7 +116,6 @@ even when the match is not in /api/home), and it becomes a fixture + test:
 - a tied match, and a super over
 - any live T10 / The Hundred / Sixes match (finished ones are covered by
   176250, 144673 and 175110)
-- an ODI that is live (we only captured a completed one)
 
 ### 3.4 Questions the captures must answer
 

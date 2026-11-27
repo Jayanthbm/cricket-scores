@@ -256,6 +256,61 @@ describe('match assembly', () => {
 		expect(match.teams[1].score).toBe('54/8');
 	});
 
+	it('replaces a stale toss status with the score line once a ball is bowled', () => {
+		const live = livescoreFixture({
+			inningsId: 1,
+			status: 'Zimbabwe A opt to bowl',
+			batTeam: { teamId: 2, teamScore: 24, teamWkts: 0 },
+			overs: 3.5,
+			target: 0,
+			remRunsToWin: 0,
+			requiredRunRate: 0,
+		});
+		const match = buildMatch({
+			header: {
+				matchId: 4,
+				matchFormat: 'ODI',
+				state: 'In Progress',
+				status: 'Zimbabwe A opt to bowl',
+				team1: { id: 1, name: 'Zimbabwe A', shortName: 'ZIMA' },
+				team2: { id: 2, name: 'Ireland A', shortName: 'IREA' },
+			},
+			livescoreJson: live,
+			scorecardJson: { scoreCard: [] },
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.state).toBe(MATCH_STATE.LIVE);
+		expect(match.status).toBe('Ireland A 24/0 (3.5)');
+	});
+
+	it('keeps the toss status before the first ball', () => {
+		const live = livescoreFixture({
+			inningsId: 1,
+			status: 'Zimbabwe A opt to bowl',
+			batTeam: { teamId: 2, teamScore: 0, teamWkts: 0 },
+			overs: 0,
+			target: 0,
+			remRunsToWin: 0,
+			requiredRunRate: 0,
+		});
+		const match = buildMatch({
+			header: {
+				matchId: 5,
+				matchFormat: 'ODI',
+				state: 'In Progress',
+				status: 'Zimbabwe A opt to bowl',
+				team1: { id: 1, name: 'Zimbabwe A', shortName: 'ZIMA' },
+				team2: { id: 2, name: 'Ireland A', shortName: 'IREA' },
+			},
+			livescoreJson: live,
+			scorecardJson: { scoreCard: [] },
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.status).toBe('Zimbabwe A opt to bowl');
+	});
+
 	it('nulls the winner fields for a drawn Test', () => {
 		const match = buildMatch({
 			header: {

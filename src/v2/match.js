@@ -358,5 +358,16 @@ export function buildMatch({
 
 	match.live = liveRelevant ? buildLive({ livescoreJson, scorecardJson, teams: match.teams, format }) : null;
 
+	// Upstream keeps the toss sentence as the status well into the new innings
+	// (175843 still said "Zimbabwe A opt to bowl" at 24/0 in 4), so once a ball
+	// has been bowled the score line says more than the toss.
+	if (match.live && /opt to (bat|bowl)/i.test(status) && match.live.score.balls > 0) {
+		const batting = match.teams.find((team) => team.isBatting);
+
+		if (batting) {
+			match.status = `${batting.name} ${match.live.score.display}`;
+		}
+	}
+
 	return match;
 }
