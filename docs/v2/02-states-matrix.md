@@ -70,7 +70,8 @@ src/v2/constants.js - that is the whole change.
 
 "Start delayed" intentionally maps to SCHEDULED (it is a pre-toss delay, the
 FE shows the start time), while "Delay"/"Interrupted" during play maps to
-DELAYED - including a toss delayed by rain before any ball is bowled (178440).
+DELAYED - including a toss delayed by rain, and the same delay once the toss is
+done but before the first ball (178440).
 
 "Tea" / "Lunch" / "Drinks" map to SESSION_BREAK: the match is still on today
 (isLive true, keep polling) but nothing is happening. They are checked after
@@ -137,7 +138,7 @@ applicable to the format; **no** = implemented, waiting for a payload.
 
 | format      | SCHEDULED | TOSS | LIVE    | SESSION_BREAK | INNINGS_BREAK | STUMPS  | DELAYED | COMPLETE | ABANDONED | evidence                                                                                                                                                                                                                                                                                                                                      |
 | ----------- | --------- | ---- | ------- | ------------- | ------------- | ------- | ------- | -------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | yes (2)   | 151352 Preview + 151374/175283 Upcoming, 178440 toss delayed by rain (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT, 161476 + 162088 abandoned without a toss, 161487 no result (state COMPLETE, result NO_RESULT)                                                                    |
+| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | yes (2)   | 151352 Preview + 151374/175283 Upcoming, 178440 delayed before and after the toss (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT, 161476 + 162088 abandoned without a toss, 161487 no result (state COMPLETE, result NO_RESULT)                                                       |
 | ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (3)  | yes (1)   | 177210 chase won by 8 wkts, 161245 DLS-reduced chase won by 5 wkts, 161256 won by 4 runs (DLS), 161260 abandoned after the toss with no innings                                                                                                                                                                                               |
 | TEST        | yes (2)   | yes  | yes (3) | yes (1)       | yes (2)       | yes (4) | no      | yes (5)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 166697 live day 4 then innings break on day 4 (lead 147), 171340 live day 1 then innings break after the 1st innings, 147964 innings win + declaration, 161285 + 166687 draws, 166643 draw with a 4th-innings chase |
 | T10         | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 176250 Abu Dhabi T10, labelled "T20" upstream, 60-ball limit                                                                                                                                                                                                                                                                                  |
@@ -183,9 +184,12 @@ Format specific things that are verified by those captures:
 - **SESSION_BREAK**: 171331 (Plunket Shield tea) is the live-verified case; the
   score, batsmen, bowlers and lastWicket are all still present, only play has
   stopped.
-- **DELAYED**: 178440 (women's T20I final, "Toss delayed due to rain") is a
-  pre-toss delay: isDelayed true, live null, no scores, toss null, comm has the
-  pre-match INFO entries. An in-play rain delay is still missing.
+- **DELAYED**: 178440 (women's T20I final) was captured twice, before and after
+  the toss. Pre-toss ("Toss delayed due to rain") has toss null; post-toss has
+  the toss but still no innings, rawState "Delay" while the status reads
+  "Indonesia Women opt to bowl". In both, isDelayed true, live null, no scores
+  and comm only has pre-match INFO entries. An in-play rain delay is still
+  missing.
 
 ### 3.2 What still needs a match id
 
@@ -198,7 +202,7 @@ no real payload behind it yet.
 | ODI live (any phase)               | the only ODI payload is a completed chase; mid-innings target/RRR/powerplay unverified                                     |
 | a live T10 / Hundred / Sixes match | only finished payloads so far; limits are applied but never exercised live                                                 |
 | an innings break                   | tests the state, whether target appears before the chase starts, and inningsId flipping                                    |
-| in-play rain delay / interruption  | DELAYED is only verified for a pre-toss delay (178440); need the mid-innings flavour and to see whether the score freezes  |
+| in-play rain delay / interruption  | DELAYED is verified before and after the toss (178440) but never mid-innings; need to see whether the score freezes        |
 | lunch or drinks break              | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload                                          |
 | a DLS chase in progress            | revisedOvers > 0 while batting; 161245/161256 prove it stays 0 once finished, so we still need a live rain-shortened chase |
 | a tied match, and a super over     | TIE result, isSuperOver, extra innings ids                                                                                 |
@@ -219,7 +223,7 @@ What upstream returns and therefore what v2 can populate.
 | SESSION_BREAK       | yes (status "Day 1: Tea Break")                 | yes                              | yes                       | everything LIVE has, but play is paused; rawState keeps Tea/Lunch/Drinks                                                                                            |
 | INNINGS_BREAK       | yes ("Day 4: Innings Break - lead by 147")      | yes                              | yes                       | live.score of the finished innings, target null, lastWicket + last partnership, inningsId still points at the innings that ended, isBatting false on both sides     |
 | STUMPS              | yes (status "Day 3: Stumps - ...")              | yes                              | yes                       | live.test.day, leadRuns/trailRuns, inningsSummary 2-4 innings                                                                                                       |
-| DELAYED             | yes (status "Rain delay" etc.)                  | yes                              | yes                       | live.score frozen, isDelayed true. A pre-toss delay (178440) has no innings at all: live null, toss null, teams no scores                                           |
+| DELAYED             | yes (status "Rain delay" etc.)                  | yes                              | yes                       | live.score frozen, isDelayed true. A delay around the toss (178440) has no innings at all: live null, teams no scores, toss null before it and populated after      |
 | COMPLETE            | yes (status = result text)                      | yes                              | yes                       | result, playerOfMatch (may lag), inningsSummary final, live.target null, winProbability null. A rain washout is COMPLETE + result NO_RESULT (161487), not ABANDONED |
 | ABANDONED           | yes (status "Match abandoned")                  | yes (header only, zero innings)  | INFO-only map or 204      | result.type ABANDONED, no scores, inningsSummary [], toss may be present (161260) or null (161476, 162088), hasScorecard is still true                              |
 | UNKNOWN             | whatever                                        | whatever                         | whatever                  | teams + rawState only                                                                                                                                               |
@@ -455,7 +459,7 @@ the status text, which is why the parse exists.
 }
 ```
 
-### DELAYED - 178440 (women's T20I final, toss delayed by rain)
+### DELAYED - 178440 (women's T20I final, rain around the toss)
 
 ```json
 {
@@ -479,6 +483,32 @@ the status text, which is why the parse exists.
 	"live": null
 }
 ```
+
+Later the same id moved to the **post-toss** flavour of the delay: the toss was
+won by Indonesia Women, who chose to bowl, but no ball had been bowled yet.
+
+```json
+{
+	"id": 178440,
+	"state": "DELAYED",
+	"rawState": "Delay",
+	"status": "Indonesia Women opt to bowl",
+	"isLive": true,
+	"isDelayed": true,
+	"toss": { "winnerTeamName": "Indonesia Women", "decision": "BOWL", "decisionText": "Bowling" },
+	"teams": [
+		{ "shortName": "IDNW", "score": null, "isBatting": false },
+		{ "shortName": "MLYW", "score": null, "isBatting": false }
+	],
+	"inningsSummary": [],
+	"live": null
+}
+```
+
+So a delay is DELAYED from the first rain signal until the first ball, whether or
+not the toss has happened: toss goes from null to populated, everything else
+stays empty. The raw state ("Delay") wins over the status text ("opt to bowl"),
+which is why this does not flip to TOSS.
 
 ### COMPLETE (draw) - 166643 (Sheffield Shield, 4th innings abandoned as a draw)
 
@@ -616,11 +646,11 @@ These are implemented from the enum + keyword fallback, but no real payload was
 recorded. The capture plan in doc 04 targets them; treat the expectations below
 as hypotheses to verify.
 
-| State             | Expected upstream signal                      | What to verify                                                                                             |
-| ----------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| DELAYED (in-play) | state "Delay"/"Interrupted", status with rain | is inningsId stable? do overs/batsmen freeze? is DRS reset? (only the pre-toss delay, 178440, is captured) |
-| TIE               | status "Match tied", result.resultType "TIE"  | margin object (value/unit) when tied                                                                       |
-| SUPER OVER        | status "Super Over", extra inningsId          | inningsSummary order, target reset, isSuperOver flag                                                       |
+| State             | Expected upstream signal                      | What to verify                                                                                                  |
+| ----------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| DELAYED (in-play) | state "Delay"/"Interrupted", status with rain | is inningsId stable? do overs/batsmen freeze? is DRS reset? (only delays around the toss, 178440, are captured) |
+| TIE               | status "Match tied", result.resultType "TIE"  | margin object (value/unit) when tied                                                                            |
+| SUPER OVER        | status "Super Over", extra inningsId          | inningsSummary order, target reset, isSuperOver flag                                                            |
 
 ## 7. Result normalisation
 
