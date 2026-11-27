@@ -442,6 +442,34 @@ describe('match assembly', () => {
 		expect(match.shortStatus).toBe('ENG won');
 	});
 
+	it('ignores the toss shortStatus at an innings break', () => {
+		const match = buildMatch({
+			header: {
+				matchId: 13,
+				matchFormat: 'T20',
+				state: 'Innings Break',
+				status: 'Innings Break',
+				shortStatus: 'HBHW opt to bowl',
+				team1: { id: 360, name: 'Perth Scorchers Women', shortName: 'PRSW' },
+				team2: { id: 357, name: 'Hobart Hurricanes Women', shortName: 'HBHW' },
+			},
+			livescoreJson: { miniscore: { inningsId: 1 } },
+			scorecardJson: {
+				matchHeader: { state: 'Innings Break' },
+				scoreCard: [
+					{
+						inningsId: 1,
+						batTeamDetails: { batTeamId: 360, batTeamName: 'Perth Scorchers Women', batTeamShortName: 'PRSW' },
+						scoreDetails: { runs: 167, wickets: 6, overs: 20 },
+					},
+				],
+			},
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.shortStatus).toBe('PRSW 167/6 (20)');
+	});
+
 	it('merges POM summaries from the comm header with the team from the scorecard', () => {
 		const match = buildMatch({
 			header: {

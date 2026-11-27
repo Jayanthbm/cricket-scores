@@ -440,7 +440,7 @@ export function buildMatch({
 	// A break drops the home feed's short label (175843 sent shortStatus null at
 	// "Innings Break"), but the innings that just ended is the useful compact
 	// label for a list card.
-	if (!match.shortStatus && BREAK_STATES.has(state) && match.inningsSummary.length) {
+	if (BREAK_STATES.has(state) && match.inningsSummary.length && (!match.shortStatus || STALE_SHORT_STATUS.test(match.shortStatus))) {
 		const last = match.inningsSummary[match.inningsSummary.length - 1];
 
 		if (last?.team?.shortName && last?.score?.display) {
