@@ -239,7 +239,15 @@ export function buildCommentary(commJson) {
 			continue;
 		}
 
-		entries.push(buildInfoEntry(item, id));
+		// Video snippets ("Plugin:video") and other widgets have no commText;
+		// emitting them would be a blank row in the feed.
+		const info = buildInfoEntry(item, id);
+
+		if (!info.text.trim()) {
+			continue;
+		}
+
+		entries.push(info);
 	}
 
 	entries.sort((left, right) => String(right.timestamp || '').localeCompare(String(left.timestamp || '')));

@@ -55,6 +55,7 @@ describe('state normalisation', () => {
 		expect(normalizeState('Lunch')).toBe(MATCH_STATE.SESSION_BREAK);
 		expect(normalizeState('Drinks')).toBe(MATCH_STATE.SESSION_BREAK);
 		expect(normalizeState('', 'Day 2: Lunch - India 210/4')).toBe(MATCH_STATE.SESSION_BREAK);
+		expect(normalizeState('Abandon')).toBe(MATCH_STATE.ABANDONED);
 	});
 
 	it('falls back to status keywords', () => {
@@ -437,5 +438,23 @@ describe('commentary', () => {
 		const commentary = buildCommentary(null);
 
 		expect(commentary).toMatchObject({ available: false, entries: [] });
+	});
+
+	it('skips widgets with no text, like a video snippet', () => {
+		const commentary = buildCommentary({
+			responseLastUpdated: 1762753600,
+			matchCommentary: {
+				1794289580631: {
+					commType: 'snippet',
+					eventType: 'Plugin:video',
+					headline: 'Rohit career driven by 2027 ODI World Cup dream',
+					timestamp: 1762753600,
+				},
+				1794289580630: { commType: 'commentary', commText: 'Rain arrives, the covers come on.', inningsId: 0, timestamp: 1762753500 },
+			},
+		});
+
+		expect(commentary.entries).toHaveLength(1);
+		expect(commentary.entries[0]).toMatchObject({ type: 'INFO', text: 'Rain arrives, the covers come on.' });
 	});
 });

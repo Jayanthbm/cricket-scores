@@ -119,14 +119,14 @@ Legend: **yes** = real payload captured and asserted; **toss** = toss data
 verified but the TOSS _state_ was only captured on a Test; **-** = not
 applicable to the format; **no** = implemented, waiting for a payload.
 
-| format      | SCHEDULED | TOSS | LIVE    | SESSION_BREAK | INNINGS_BREAK | STUMPS  | DELAYED | COMPLETE | ABANDONED | evidence                                                                                                                                                                                                                                                       |
-| ----------- | --------- | ---- | ------- | ------------- | ------------- | ------- | ------- | -------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | no        | 151352 Preview + 151374/175283 Upcoming, 178440 toss delayed by rain (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT                                                                                    |
-| ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (1)  | no        | 177210 chase won by 8 wkts                                                                                                                                                                                                                                     |
-| TEST        | yes (2)   | yes  | yes (3) | yes (1)       | no            | yes (4) | no      | yes (3)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 171340 live day 1, 166697 live day 4 (lead 106), 147964 innings win + declaration, 166687 draw, 166643 draw with a 4th-innings chase |
-| T10         | no        | no   | no      | no            | no            | -       | no      | no       | no        | implemented only (60-ball limit)                                                                                                                                                                                                                               |
-| THE_HUNDRED | no        | no   | no      | no            | no            | -       | no      | no       | no        | implemented only (100-ball limit)                                                                                                                                                                                                                              |
-| OTHER       | no        | no   | no      | no            | no            | -       | no      | no       | no        | falls through to no ball limit                                                                                                                                                                                                                                 |
+| format      | SCHEDULED | TOSS | LIVE    | SESSION_BREAK | INNINGS_BREAK | STUMPS  | DELAYED | COMPLETE | ABANDONED | evidence                                                                                                                                                                                                                                                                 |
+| ----------- | --------- | ---- | ------- | ------------- | ------------- | ------- | ------- | -------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | no        | 151352 Preview + 151374/175283 Upcoming, 178440 toss delayed by rain (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT                                                                                              |
+| ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (3)  | yes (1)   | 177210 chase won by 8 wkts, 161245 DLS-reduced chase won by 5 wkts, 161256 won by 4 runs (DLS), 161260 abandoned after the toss with no innings                                                                                                                          |
+| TEST        | yes (2)   | yes  | yes (3) | yes (1)       | no            | yes (4) | no      | yes (5)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 171340 live day 1, 166697 live day 4 (lead 106), 147964 innings win + declaration, 161285 + 166687 draws, 166643 draw with a 4th-innings chase |
+| T10         | no        | no   | no      | no            | no            | -       | no      | no       | no        | implemented only (60-ball limit)                                                                                                                                                                                                                                         |
+| THE_HUNDRED | no        | no   | no      | no            | no            | -       | no      | no       | no        | implemented only (100-ball limit)                                                                                                                                                                                                                                        |
+| OTHER       | no        | no   | no      | no            | no            | -       | no      | no       | no        | falls through to no ball limit                                                                                                                                                                                                                                           |
 
 Format specific things that are verified by those captures:
 
@@ -137,16 +137,27 @@ Format specific things that are verified by those captures:
   (162941), extras and fall of wickets. Both pre-match raw strings are covered:
   "Preview" (151352) and "Upcoming" (151374, 175283, no commentary at all).
 - **ODI**: 50-over / 300-ball limit, Mandatory powerplay 0.1-10, result margin
-  in wickets, toss, player of the match, extras, partnerships.
+  in wickets (177210, 161245) and runs (161256), toss, player of the match,
+  extras, partnerships. Both Indian tour ODIs were rain-shortened and decided by
+  DLS: 161245's chase was reduced to 32 overs (won by 5 wkts, status carries the
+  DLS target 143) and 161256 lost by 4 runs under DLS with the innings cut to 41
+  and 26 overs. In both, scoreDetails.revisedOvers stayed 0 and the only DLS
+  signal is the status/result text - see the DLS gap below.
 - **TEST**: day number, lead/trail (both directions: lead 106 in 166697, trail 158
   and 88 in 171830/171817), innings number, declaration (147964 innings 2), no
   ball limit, no powerplay, 2-4 innings in inningsSummary, no live target.
   Live coverage is three shapes: mid-session on day 1 with no lead yet (171340,
   228/6, leadRuns null), day 4 with a lead and three innings (166697,
   inningsNumber 3, teamInningsNumber 2), and stumps on 1 and 2 innings
-  (171807, 171830, 171817). A draw that still had a 4th-innings chase target is
-  covered by 166643 (result DRAW, winner fields all null, live null, 75/3
-  chasing 201).
+  (171807, 171830, 171817). Two draws are covered: 161285 (India declared 720/9d
+  on day 5, result DRAW with null winner fields) and 166643 (4th-innings chase
+  abandoned at 75/3 chasing 201).
+- **ABANDONED**: 161260 (3rd ODI, "Match abandoned due to rain (with toss)") is
+  the first real case. rawState is the bare string "Abandon" (not
+  "Abandoned"), so it lands on the keyword branch, result.resultType is
+  "abandon" with an empty winningTeam, the scorecard payload exists but has an
+  empty scoreCard[], and the commentary payload is a map of INFO entries
+  (including video snippets, which v2 filters out).
 - **SESSION_BREAK**: 171331 (Plunket Shield tea) is the live-verified case; the
   score, batsmen, bowlers and lastWicket are all still present, only play has
   stopped.
@@ -159,20 +170,20 @@ Format specific things that are verified by those captures:
 Send the id when you see one of these; every item below is implemented but has
 no real payload behind it yet.
 
-| required                          | why it matters                                                                                                            |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| T20 at TOSS                       | the TOSS state was only captured on a four-day Test; toss fields are verified, the state transition is not                |
-| ODI live (any phase)              | the only ODI payload is a completed chase; mid-innings target/RRR/powerplay unverified                                    |
-| T10 match                         | format limit 60, no powerplay assumed                                                                                     |
-| THE_HUNDRED match                 | format limit 100, no powerplay assumed                                                                                    |
-| an innings break                  | tests the state, whether target appears before the chase starts, and inningsId flipping                                   |
-| in-play rain delay / interruption | DELAYED is only verified for a pre-toss delay (178440); need the mid-innings flavour and to see whether the score freezes |
-| lunch or drinks break             | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload                                         |
-| a DLS chase in progress           | revisedOvers > 0 while batting (we only saw it after the fact, 162941)                                                    |
-| abandoned or no result            | ABANDONED / NO_RESULT result types and empty scorecards                                                                   |
-| a tied match, and a super over    | TIE result, isSuperOver, extra innings ids                                                                                |
-| a Test follow-on innings          | score.followOn true is implemented but never observed                                                                     |
-| an ODI or T20 with winProbability | only 175273 carried it so far                                                                                             |
+| required                          | why it matters                                                                                                             |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| T20 at TOSS                       | the TOSS state was only captured on a four-day Test; toss fields are verified, the state transition is not                 |
+| ODI live (any phase)              | the only ODI payload is a completed chase; mid-innings target/RRR/powerplay unverified                                     |
+| T10 match                         | format limit 60, no powerplay assumed                                                                                      |
+| THE_HUNDRED match                 | format limit 100, no powerplay assumed                                                                                     |
+| an innings break                  | tests the state, whether target appears before the chase starts, and inningsId flipping                                    |
+| in-play rain delay / interruption | DELAYED is only verified for a pre-toss delay (178440); need the mid-innings flavour and to see whether the score freezes  |
+| lunch or drinks break             | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload                                          |
+| a DLS chase in progress           | revisedOvers > 0 while batting; 161245/161256 prove it stays 0 once finished, so we still need a live rain-shortened chase |
+| no result                         | NO_RESULT is distinct from ABANDONED; we have ABANDONED (161260) but no NO_RESULT payload                                  |
+| a tied match, and a super over    | TIE result, isSuperOver, extra innings ids                                                                                 |
+| a Test follow-on innings          | score.followOn true is implemented but never observed                                                                      |
+| an ODI or T20 with winProbability | only 175273 carried it so far                                                                                              |
 
 Doc 04 lists the questions each capture has to answer.
 
@@ -190,7 +201,7 @@ What upstream returns and therefore what v2 can populate.
 | STUMPS              | yes (status "Day 3: Stumps - ...")              | yes                              | yes                       | live.test.day, leadRuns/trailRuns, inningsSummary 2-4 innings                                                             |
 | DELAYED             | yes (status "Rain delay" etc.)                  | yes                              | yes                       | live.score frozen, isDelayed true. A pre-toss delay (178440) has no innings at all: live null, toss null, teams no scores |
 | COMPLETE            | yes (status = result text)                      | yes                              | yes                       | result, playerOfMatch (may lag), inningsSummary final, live.target null, winProbability null                              |
-| ABANDONED           | yes (status "Match abandoned")                  | yes                              | maybe 204                 | result.type ABANDONED / NO_RESULT, no scores                                                                              |
+| ABANDONED           | yes (status "Match abandoned")                  | yes (header only, zero innings)  | INFO-only map or 204      | result.type ABANDONED, no scores, inningsSummary [], toss may exist, hasScorecard is still true                           |
 | UNKNOWN             | whatever                                        | whatever                         | whatever                  | teams + rawState only                                                                                                     |
 
 Practical rules that fall out of the matrix:
@@ -200,7 +211,12 @@ Practical rules that fall out of the matrix:
 - playerOfMatch is empty for matches that just finished (upstream lag). Show
   "Awards" only when non-empty, or refetch the hub after a few minutes.
 - commentary for a not-started match is either 204 (no payload) or INFO-only
-  entries ("Squads:", "Venue", ...) with inningsId 0.
+  entries ("Squads:", "Venue", ...) with inningsId 0. For an abandoned match the
+  same payload can contain video snippets (commType "snippet"); v2 drops every
+  entry with no text instead of returning blank rows.
+- hasScorecard means "the scorecard endpoint answered", not "there are innings".
+  161260 has hasScorecard true with inningsSummary []; render the scorecard tab
+  from inningsSummary.inningsId.
 - winProbability is live-only and optional per match.
 
 ## 5. Real examples (captured Nov 2026)
@@ -463,6 +479,39 @@ Practical rules that fall out of the matrix:
 }
 ```
 
+### ABANDONED - 161260 (3rd ODI, abandoned after the toss)
+
+```json
+{
+	"id": 161260,
+	"format": "ODI",
+	"state": "ABANDONED",
+	"stateLabel": "Abandoned",
+	"rawState": "Abandon",
+	"status": "Match abandoned due to rain (with toss)",
+	"isLive": false,
+	"isUpcoming": false,
+	"isComplete": true,
+	"toss": { "winnerTeamName": "India", "decision": "BOWL", "decisionText": "Bowling" },
+	"result": {
+		"type": "ABANDONED",
+		"text": "Match abandoned due to rain (with toss)",
+		"winnerTeamId": null,
+		"winnerTeamName": null,
+		"winnerTeamShortName": null,
+		"margin": null
+	},
+	"playerOfMatch": [],
+	"teams": [
+		{ "shortName": "NZ", "score": null, "overs": null, "isBatting": false, "innings": [] },
+		{ "shortName": "IND", "score": null, "overs": null, "isBatting": false, "innings": [] }
+	],
+	"inningsSummary": [],
+	"hasScorecard": true,
+	"live": null
+}
+```
+
 Note: in a list without enrich=full, toss/result/playerOfMatch may be missing
 for completed matches (they come from the scorecard). live is null for
 finished matches by design (see doc 03).
@@ -477,7 +526,6 @@ as hypotheses to verify.
 | ----------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | INNINGS_BREAK     | livescore state "Innings Break", status like "Innings Break" or "X need Y runs" | does inningsId flip immediately? is target already the new target? does comm switch innings?               |
 | DELAYED (in-play) | state "Delay"/"Interrupted", status with rain                                   | is inningsId stable? do overs/batsmen freeze? is DRS reset? (only the pre-toss delay, 178440, is captured) |
-| ABANDONED         | state "Abandoned"/"No Result", result text                                      | is matchHeader.complete true or false? are innings empty?                                                  |
 | TIE               | status "Match tied", result.resultType "TIE"                                    | margin object (value/unit) when tied                                                                       |
 | NO_RESULT         | status "No result", result.resultType "NO_RESULT"                               | result.type must be NO_RESULT, not WIN                                                                     |
 | SUPER OVER        | status "Super Over", extra inningsId                                            | inningsSummary order, target reset, isSuperOver flag                                                       |
