@@ -181,6 +181,9 @@ playerDetails[] }, team2 { ... }, seriesDesc, seriesId, seriesName,
 venue { id, name, city, country, timezone, latitude, longitude }, alertType,
 livestreamEnabled.
 
+- matchHeader.complete is not "match finished": 166697 has complete true on
+  day 4 of a Sheffield Shield game that is still going. Use state/status for
+  liveness and treat complete as "every scheduled innings has data".
 - matchFormat values seen: T20, ODI, TEST, T10, HUN (The Hundred). It is not
   trustworthy: the Abu Dhabi T10 and the Hong Kong Sixes both report "T20",
   so the series name has to decide (see doc 02 section 3).

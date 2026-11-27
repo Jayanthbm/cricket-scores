@@ -285,6 +285,29 @@ describe('match assembly', () => {
 		});
 		expect(match.live).toBe(null);
 	});
+
+	it('stops flagging a batting side during an innings break', () => {
+		const match = buildMatch({
+			header: {
+				matchId: 4,
+				matchFormat: 'TEST',
+				state: 'Innings Break',
+				status: 'Day 4: Innings Break - South Australia lead by 147 runs',
+				team1: { id: 1, name: 'South Australia', shortName: 'SAUS' },
+				team2: { id: 2, name: 'Victoria', shortName: 'VIC' },
+			},
+			livescoreJson: livescoreFixture({
+				status: 'Day 4: Innings Break - South Australia lead by 147 runs',
+				matchScoreDetails: { state: 'Innings Break', matchFormat: 'TEST', inningsScoreList: [] },
+			}),
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.state).toBe(MATCH_STATE.INNINGS_BREAK);
+		expect(match.isComplete).toBe(false);
+		expect(match.teams.map((team) => team.isBatting)).toEqual([false, false]);
+		expect(match.live.score.runs).toBe(54);
+	});
 });
 
 describe('live block', () => {

@@ -135,15 +135,15 @@ Legend: **yes** = real payload captured and asserted; **toss** = toss data
 verified but the TOSS _state_ was only captured on a Test; **-** = not
 applicable to the format; **no** = implemented, waiting for a payload.
 
-| format      | SCHEDULED | TOSS | LIVE    | SESSION_BREAK | INNINGS_BREAK | STUMPS  | DELAYED | COMPLETE | ABANDONED | evidence                                                                                                                                                                                                                                                                   |
-| ----------- | --------- | ---- | ------- | ------------- | ------------- | ------- | ------- | -------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | yes (2)   | 151352 Preview + 151374/175283 Upcoming, 178440 toss delayed by rain (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT, 161476 + 162088 abandoned without a toss, 161487 no result (state COMPLETE, result NO_RESULT) |
-| ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (3)  | yes (1)   | 177210 chase won by 8 wkts, 161245 DLS-reduced chase won by 5 wkts, 161256 won by 4 runs (DLS), 161260 abandoned after the toss with no innings                                                                                                                            |
-| TEST        | yes (2)   | yes  | yes (3) | yes (1)       | no            | yes (4) | no      | yes (5)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 171340 live day 1, 166697 live day 4 (lead 106), 147964 innings win + declaration, 161285 + 166687 draws, 166643 draw with a 4th-innings chase   |
-| T10         | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 176250 Abu Dhabi T10, labelled "T20" upstream, 60-ball limit                                                                                                                                                                                                               |
-| THE_HUNDRED | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 144673 (format "HUN"), 100-ball limit, overs "9.8" = 9 sets + 8 balls                                                                                                                                                                                                      |
-| SIXES       | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 175110 Hong Kong Sixes, labelled "T20" upstream, 36-ball (6 over) innings                                                                                                                                                                                                  |
-| OTHER       | no        | no   | no      | no            | no            | -       | no      | no       | no        | falls through to no ball limit                                                                                                                                                                                                                                             |
+| format      | SCHEDULED | TOSS | LIVE    | SESSION_BREAK | INNINGS_BREAK | STUMPS  | DELAYED | COMPLETE | ABANDONED | evidence                                                                                                                                                                                                                                                                                             |
+| ----------- | --------- | ---- | ------- | ------------- | ------------- | ------- | ------- | -------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | yes (2)   | 151352 Preview + 151374/175283 Upcoming, 178440 toss delayed by rain (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT, 161476 + 162088 abandoned without a toss, 161487 no result (state COMPLETE, result NO_RESULT)                           |
+| ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (3)  | yes (1)   | 177210 chase won by 8 wkts, 161245 DLS-reduced chase won by 5 wkts, 161256 won by 4 runs (DLS), 161260 abandoned after the toss with no innings                                                                                                                                                      |
+| TEST        | yes (2)   | yes  | yes (3) | yes (1)       | yes (1)       | yes (4) | no      | yes (5)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 166697 live day 4 then innings break on day 4 (lead 147), 171340 live day 1, 147964 innings win + declaration, 161285 + 166687 draws, 166643 draw with a 4th-innings chase |
+| T10         | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 176250 Abu Dhabi T10, labelled "T20" upstream, 60-ball limit                                                                                                                                                                                                                                         |
+| THE_HUNDRED | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 144673 (format "HUN"), 100-ball limit, overs "9.8" = 9 sets + 8 balls                                                                                                                                                                                                                                |
+| SIXES       | no        | no   | no      | no            | no            | -       | no      | yes (1)  | no        | 175110 Hong Kong Sixes, labelled "T20" upstream, 36-ball (6 over) innings                                                                                                                                                                                                                            |
+| OTHER       | no        | no   | no      | no            | no            | -       | no      | no       | no        | falls through to no ball limit                                                                                                                                                                                                                                                                       |
 
 Format specific things that are verified by those captures:
 
@@ -217,7 +217,7 @@ What upstream returns and therefore what v2 can populate.
 | TOSS                | yes (status "X opt to bat", no score)           | yes (header, tossResults)        | INFO entries              | toss populated, teams no scores, live null                                                                                                                          |
 | LIVE                | yes                                             | yes                              | yes                       | everything: live.score/target/partnership/lastWicket/batsmen/bowlers/drs/winProbability, teams scores, isBatting                                                    |
 | SESSION_BREAK       | yes (status "Day 1: Tea Break")                 | yes                              | yes                       | everything LIVE has, but play is paused; rawState keeps Tea/Lunch/Drinks                                                                                            |
-| INNINGS_BREAK       | yes (status "Innings Break")                    | yes                              | yes                       | live.score of finished innings, target null until 2nd innings starts, teams scores, lastWicket                                                                      |
+| INNINGS_BREAK       | yes ("Day 4: Innings Break - lead by 147")      | yes                              | yes                       | live.score of the finished innings, target null, lastWicket + last partnership, inningsId still points at the innings that ended, isBatting false on both sides     |
 | STUMPS              | yes (status "Day 3: Stumps - ...")              | yes                              | yes                       | live.test.day, leadRuns/trailRuns, inningsSummary 2-4 innings                                                                                                       |
 | DELAYED             | yes (status "Rain delay" etc.)                  | yes                              | yes                       | live.score frozen, isDelayed true. A pre-toss delay (178440) has no innings at all: live null, toss null, teams no scores                                           |
 | COMPLETE            | yes (status = result text)                      | yes                              | yes                       | result, playerOfMatch (may lag), inningsSummary final, live.target null, winProbability null. A rain washout is COMPLETE + result NO_RESULT (161487), not ABANDONED |
@@ -348,6 +348,43 @@ Practical rules that fall out of the matrix:
 	]
 }
 ```
+
+### INNINGS_BREAK - 166697 (same Test, day 4)
+
+```json
+{
+	"id": 166697,
+	"format": "TEST",
+	"state": "INNINGS_BREAK",
+	"stateLabel": "Innings Break",
+	"rawState": "Innings Break",
+	"status": "Day 4: Innings Break - South Australia lead by 147 runs",
+	"isLive": true,
+	"live": {
+		"inningsId": 3,
+		"score": { "display": "277/10 (99)", "runs": 277, "wickets": 10, "balls": 594 },
+		"target": null,
+		"test": { "day": 4, "inningsNumber": 3, "teamInningsNumber": 2, "leadRuns": 147, "trailRuns": null, "target": null },
+		"lastWicket": { "batter": "Lloyd Pope", "runs": 1, "balls": 31, "score": "277/10", "overs": "99", "wicketNumber": 10 }
+	},
+	"teams": [
+		{ "shortName": "SAUS", "score": "287/10 & 277/10", "overs": "99", "isBatting": false },
+		{ "shortName": "VIC", "score": "417/10", "overs": "135.3", "isBatting": false }
+	],
+	"inningsSummary": [
+		{ "inningsId": 1, "team": { "shortName": "SAUS" }, "score": { "display": "287/10 (97.1)" } },
+		{ "inningsId": 2, "team": { "shortName": "VIC" }, "score": { "display": "417/10 (135.3)" } },
+		{ "inningsId": 3, "team": { "shortName": "SAUS" }, "score": { "display": "277/10 (99)" } }
+	]
+}
+```
+
+Note: the innings ends at 277/10 in 99 overs and the next one has not started, so
+`inningsId` is still 3 and `target` is null even though the chase target (148) is
+already arithmetically known. Upstream's `matchHeader.complete` is **true** here
+(it marks "all scheduled innings have data"), so v2 derives `isComplete` from the
+state instead and the match stays live. Both sides have `isBatting: false`
+because nobody is batting during the break.
 
 ### COMPLETE - 177210 (ODI, POM available)
 
@@ -572,12 +609,11 @@ These are implemented from the enum + keyword fallback, but no real payload was
 recorded. The capture plan in doc 04 targets them; treat the expectations below
 as hypotheses to verify.
 
-| State             | Expected upstream signal                                                        | What to verify                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| INNINGS_BREAK     | livescore state "Innings Break", status like "Innings Break" or "X need Y runs" | does inningsId flip immediately? is target already the new target? does comm switch innings?               |
-| DELAYED (in-play) | state "Delay"/"Interrupted", status with rain                                   | is inningsId stable? do overs/batsmen freeze? is DRS reset? (only the pre-toss delay, 178440, is captured) |
-| TIE               | status "Match tied", result.resultType "TIE"                                    | margin object (value/unit) when tied                                                                       |
-| SUPER OVER        | status "Super Over", extra inningsId                                            | inningsSummary order, target reset, isSuperOver flag                                                       |
+| State             | Expected upstream signal                      | What to verify                                                                                             |
+| ----------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| DELAYED (in-play) | state "Delay"/"Interrupted", status with rain | is inningsId stable? do overs/batsmen freeze? is DRS reset? (only the pre-toss delay, 178440, is captured) |
+| TIE               | status "Match tied", result.resultType "TIE"  | margin object (value/unit) when tied                                                                       |
+| SUPER OVER        | status "Super Over", extra inningsId          | inningsSummary order, target reset, isSuperOver flag                                                       |
 
 ## 7. Result normalisation
 

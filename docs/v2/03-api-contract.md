@@ -242,24 +242,24 @@ upstream has no faceImageId.
 
 ### 6.6 Live
 
-| Field             | Type           | Null | Notes                                             |
-| ----------------- | -------------- | ---- | ------------------------------------------------- |
-| inningsId         | number         | no   | current innings (0 before start)                  |
-| battingTeam       | TeamRef        | yes  | { id, name, shortName }                           |
-| bowlingTeam       | TeamRef        | yes  |                                                   |
-| score             | Score          | no   | current innings score                             |
-| target            | Target         | yes  | null when not chasing **and null once finished**  |
-| partnership       | object         | yes  | { runs, balls, display }                          |
-| lastWicket        | LastWicket     | yes  | null when no wicket fell                          |
-| batsmen           | object         | no   | { striker: Batter/null, nonStriker: Batter/null } |
-| bowlers           | object         | no   | { striker: Bowler/null, nonStriker: Bowler/null } |
-| recentBalls       | string[]       | no   | tokens of the current over, oldest first          |
-| recentPerformance | object[]       | no   | [{ label, runs, wickets }]                        |
-| events            | string[]       | no   | e.g. ["over-break"], ["wicket"]                   |
-| drs               | DRS            | yes  | null when the match has no UDRS                   |
-| winProbability    | WinProbability | yes  | null for most matches                             |
-| test              | TestContext    | yes  | Tests only                                        |
-| updatedAt         | string         | yes  | ISO, upstream last update                         |
+| Field             | Type           | Null | Notes                                                                                             |
+| ----------------- | -------------- | ---- | ------------------------------------------------------------------------------------------------- |
+| inningsId         | number         | no   | current innings (0 before start); during an innings break it stays on the innings that just ended |
+| battingTeam       | TeamRef        | yes  | { id, name, shortName }                                                                           |
+| bowlingTeam       | TeamRef        | yes  |                                                                                                   |
+| score             | Score          | no   | current innings score                                                                             |
+| target            | Target         | yes  | null when not chasing **and null once finished**                                                  |
+| partnership       | object         | yes  | { runs, balls, display }                                                                          |
+| lastWicket        | LastWicket     | yes  | null when no wicket fell                                                                          |
+| batsmen           | object         | no   | { striker: Batter/null, nonStriker: Batter/null }                                                 |
+| bowlers           | object         | no   | { striker: Bowler/null, nonStriker: Bowler/null }                                                 |
+| recentBalls       | string[]       | no   | tokens of the current over, oldest first                                                          |
+| recentPerformance | object[]       | no   | [{ label, runs, wickets }]                                                                        |
+| events            | string[]       | no   | e.g. ["over-break"], ["wicket"]                                                                   |
+| drs               | DRS            | yes  | null when the match has no UDRS                                                                   |
+| winProbability    | WinProbability | yes  | null for most matches                                                                             |
+| test              | TestContext    | yes  | Tests only                                                                                        |
+| updatedAt         | string         | yes  | ISO, upstream last update                                                                         |
 
 Target:
 
@@ -536,7 +536,9 @@ Poll every 20-30 s while the tab is visible.
 - Render score.display, never concatenate runs/wickets/overs yourself.
 - Switch on state, not on status text. Use isLive/isUpcoming/isComplete.
 - Teams: only one team has isBatting true while live; for finished matches
-  every isBatting is false (do not paint a "batting" badge then).
+  and during an innings break every isBatting is false (do not paint a
+  "batting" badge then), even though livescore still points at the side that
+  was batting.
 - Show the target banner only when live.target is non-null:
   "Need {runsNeeded} in {ballsRemaining} balls (RRR {requiredRunRate})".
 - Show lastWicket when non-null; if lastWicket.isLatest is false, label it

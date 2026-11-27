@@ -46,7 +46,7 @@ workaround today.
 | 11  | Team icon cache is per-isolate and only filled by /home        | icon may be null on /live or /commentary first call                                                                     | call /v2/matches once, or fall back to initials                                | persist imageId mapping in KV/D1                                                    |
 | 12  | 204 is overloaded (no content vs invalid id)                   | cannot distinguish "not started" from "bad id" without another call                                                     | we probe multiple endpoints and answer 404 only when all are empty             | none                                                                                |
 | 13  | T10 / Hundred / Sixes only captured finished                   | live ball limits and powerplay behaviour unverified; upstream mislabels T10 and Sixes as "T20"                          | series-name format hints + ballNbr-based ball counts                           | capture one live match of each (section 3)                                          |
-| 14  | Innings Break / in-play Delayed / Tie not captured live        | normalisation is code-only for those                                                                                    | keyword fallback                                                               | capture them (section 3)                                                            |
+| 14  | In-play Delayed / Tie not captured live                        | normalisation is code-only for those                                                                                    | keyword fallback                                                               | capture them (section 3)                                                            |
 | 15  | status/shortStatus are English only                            | no i18n                                                                                                                 | -                                                                              | translate client-side                                                               |
 | 16  | DLS lives in the status text only                              | revisedOvers is 0 even for a finished rain-shortened innings, so a live DLS chase can fall back to the 50/20-over limit | read result.text / status; treat ballsRemaining as approximate for a DLS chase | needs a live rain-shortened chase to see whether revisedOvers appears while batting |
 | 17  | No "current innings" flag for upcoming/finished matches        | FE must infer from live or inningsSummary                                                                               | inningsSummary is ordered, last = current/most recent                          | add match.currentInningsId                                                          |
@@ -110,7 +110,6 @@ When you spot one of these on the site, send the match id plus what it is.
 The harness then records it with `npm run capture -- --matches <id>` (works
 even when the match is not in /api/home), and it becomes a fixture + test:
 
-- an innings break (the score is between innings)
 - rain stopping play (Delay / Interrupted), or a DLS-revised chase mid-innings
 - an abandoned match or a no-result
 - a tied match, and a super over
@@ -124,11 +123,18 @@ even when the match is not in /api/home), and it becomes a fixture + test:
 Tick these off as evidence arrives; each one either confirms the current
 behaviour or becomes a code change.
 
-1. Does the raw state ever read "Innings Break", and does inningsId flip at the
-   same moment?
-2. At Innings Break, is miniscore.target already the new target, or 0?
-3. Does comm switch to the new innings immediately, or lag?
-4. Do livescore batsmen/bowlers become empty/null during a break or delay?
+1. ~~Does the raw state ever read "Innings Break", and does inningsId flip?~~
+   Answered by 166697: the raw state is exactly "Innings Break", and inningsId
+   does **not** flip - it stays on the innings that just ended until the new one
+   starts.
+2. ~~At Innings Break, is miniscore.target already the new target?~~ No: target
+   is null/0 through the break (166697 leads by 147, the 148 chase target is
+   arithmetic only), so live.target stays null.
+3. ~~Does comm switch to the new innings immediately, or lag?~~ It lags: every
+   entry still carries the ended inningsId for the whole break.
+4. ~~Do livescore batsmen/bowlers become empty/null during a break or delay?~~
+   Not at an innings break: the closing pair, the last partnership and the last
+   wicket stay populated; only isBatting is forced to false.
 5. For a rain delay mid-innings, do overs/score freeze, and does the status
    keep the previous state or switch to "Delay"?
 6. For an abandoned match, is matchHeader.complete true or false, and what is

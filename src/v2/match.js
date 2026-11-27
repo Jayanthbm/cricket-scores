@@ -254,7 +254,9 @@ function inningsFromHome(homeInfo, homeMatch, format) {
 function buildTeamCards({ header, scorecardJson, homeInfo, homeMatch, livescoreJson, baseUrl, state, format }) {
 	const inningsList = scorecardJson ? inningsFromScorecard(scorecardJson, format) : inningsFromHome(homeInfo, homeMatch, format);
 	const battingTeamId = toNumber(livescoreJson?.miniscore?.batTeam?.teamId) || toNumber(homeInfo?.currBatTeamId);
-	const showBatting = LIVE_STATES.has(state);
+	// Nobody is batting during an innings break: livescore still points at the
+	// side that was just bowled out (or declared), so the flag must drop.
+	const showBatting = LIVE_STATES.has(state) && state !== MATCH_STATE.INNINGS_BREAK;
 
 	const rawTeams = header
 		? [
