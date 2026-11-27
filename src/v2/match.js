@@ -145,12 +145,31 @@ function buildPlayerAward(player, baseUrl) {
 		id: toNumber(player?.id),
 		name: player?.name || name,
 		fullName: name,
-		teamId: toNumber(player?.teamId, 0),
-		teamName: player?.teamName || '',
+		teamId: toNumber(player?.teamId),
+		teamName: player?.teamName || null,
 		faceImageUrl: imageId ? `${baseUrl}/v2/player-icon/${imageId}/${slugify(name) || 'player'}` : null,
 		batting: player?.battingSummary ?? null,
 		bowling: player?.bowlingSummary ?? null,
 	};
+}
+
+const SHORT_RESULT = {
+	DRAW: 'Match drawn',
+	TIE: 'Match tied',
+	NO_RESULT: 'No result',
+	ABANDONED: 'Abandoned',
+};
+
+function shortResultText(result) {
+	if (!result) {
+		return null;
+	}
+
+	if (result.type === 'WIN') {
+		return result.winnerTeamShortName ? `${result.winnerTeamShortName} won` : result.text;
+	}
+
+	return SHORT_RESULT[result.type] || result.text;
 }
 
 function buildAwards(players, baseUrl) {
@@ -352,6 +371,11 @@ export function buildMatch({
 	match.playerOfMatch = buildAwards(awardSource?.playersOfTheMatch, baseUrl);
 	match.playerOfSeries = buildAwards(awardSource?.playersOfTheSeries, baseUrl);
 	match.inningsSummary = scorecardJson ? inningsFromScorecard(scorecardJson, format) : inningsFromHome(homeInfo, homeMatch, format);
+	// The home feed drops finished matches, so give cards a short result label.
+	if (!match.shortStatus && match.isComplete) {
+		match.shortStatus = shortResultText(match.result);
+	}
+
 	// A finished match keeps its final scores in teams/inningsSummary; a live
 	// block there would only show stale batsmen/bowlers and a null target.
 	const liveRelevant = !FINISHED_STATES.has(state);

@@ -364,6 +364,7 @@ describe('match assembly', () => {
 			margin: null,
 		});
 		expect(match.live).toBe(null);
+		expect(match.shortStatus).toBe('Match drawn');
 	});
 
 	it('keeps a no result as COMPLETE with a NO_RESULT result', () => {
