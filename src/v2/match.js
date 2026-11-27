@@ -3,6 +3,8 @@ import { buildLive, buildWinProbability } from './live';
 import { buildTeamCard, buildTeamRef } from './teams';
 import { formatDateTime, safeArray, scoreLine, slugify, toIso, toNumber } from './utils';
 
+const STALE_SHORT_STATUS = /opt to (bat|bowl)|^rain|need \d+ to win|innings break|stumps|delay|abandon/i;
+
 const RESULT_TYPES = {
 	win: 'WIN',
 	draw: 'DRAW',
@@ -399,9 +401,10 @@ export function buildMatch({
 			}
 
 			// shortStatus comes from the home feed, which keeps the toss sentence
-			// (151352) or drops the match entirely once it goes live; either way a
-			// score line is the honest short label.
-			if (!match.shortStatus || /opt to (bat|bowl)/i.test(match.shortStatus)) {
+			// (151352), a rain label from before the resumption ("Rain", still shown
+			// at 46/1 in 4 after play restarted) or drops the match entirely; a score
+			// line is the honest short label in all three cases.
+			if (!match.shortStatus || STALE_SHORT_STATUS.test(match.shortStatus)) {
 				match.shortStatus = `${batting.shortName} ${match.live.score.display}`;
 			}
 		}

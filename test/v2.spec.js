@@ -313,6 +313,40 @@ describe('match assembly', () => {
 		expect(match.shortStatus).toBe('IREA 24/0 (3.5)');
 	});
 
+	it('replaces a stale rain shortStatus once play resumes', () => {
+		const live = livescoreFixture({
+			batTeam: { teamId: 9, teamScore: 46, teamWkts: 1 },
+			overs: 4,
+			target: 109,
+			remRunsToWin: 63,
+			matchScoreDetails: {
+				state: 'In Progress',
+				matchFormat: 'T20',
+				inningsScoreList: [
+					{ inningsId: 1, batTeamId: 4, score: 108, wickets: 10, overs: 16.5 },
+					{ inningsId: 2, batTeamId: 9, score: 46, wickets: 1, overs: 4 },
+				],
+			},
+		});
+		const match = buildMatch({
+			header: {
+				matchId: 9,
+				matchFormat: 'T20',
+				state: 'In Progress',
+				status: 'England need 63 runs',
+				team1: { id: 4, name: 'Australia', shortName: 'AUS' },
+				team2: { id: 9, name: 'England', shortName: 'ENG' },
+				shortStatus: 'Rain',
+			},
+			livescoreJson: live,
+			scorecardJson: { scoreCard: [] },
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.state).toBe(MATCH_STATE.LIVE);
+		expect(match.shortStatus).toBe('ENG 46/1 (4)');
+	});
+
 	it('keeps the toss status before the first ball', () => {
 		const live = livescoreFixture({
 			inningsId: 1,
