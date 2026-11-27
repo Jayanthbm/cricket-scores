@@ -3,7 +3,7 @@ import { buildLive, buildWinProbability } from './live';
 import { buildTeamCard, buildTeamRef } from './teams';
 import { formatDateTime, safeArray, scoreLine, slugify, toIso, toNumber } from './utils';
 
-const STALE_SHORT_STATUS = /opt to (bat|bowl)|^rain|need \d+ to win|innings break|stumps|delay|abandon/i;
+const STALE_SHORT_STATUS = /opt to (bat|bowl)|^rain|need \d+ runs?|innings break|stumps|delay|abandon/i;
 
 const RESULT_TYPES = {
 	win: 'WIN',
@@ -402,8 +402,10 @@ export function buildMatch({
 
 			// shortStatus comes from the home feed, which keeps the toss sentence
 			// (151352), a rain label from before the resumption ("Rain", still shown
-			// at 46/1 in 4 after play restarted) or drops the match entirely; a score
-			// line is the honest short label in all three cases.
+			// at 46/1 in 4 after play restarted), a chase sentence that goes stale
+			// within a ball ("England need 45 runs in 64 balls" while the live block
+			// said 40 in 62) or drops the match entirely; the score line is the honest
+			// short label in every case.
 			if (!match.shortStatus || STALE_SHORT_STATUS.test(match.shortStatus)) {
 				match.shortStatus = `${batting.shortName} ${match.live.score.display}`;
 			}

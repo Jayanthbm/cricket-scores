@@ -388,6 +388,39 @@ describe('match assembly', () => {
 		expect(match.shortStatus).toBe('ENG 46/1 (4)');
 	});
 
+	it('replaces a chase sentence that goes stale within a ball', () => {
+		const live = livescoreFixture({
+			batTeam: { teamId: 9, teamScore: 57, teamWkts: 3 },
+			overs: 6.3,
+			target: 98,
+			remRunsToWin: 41,
+			matchScoreDetails: {
+				state: 'In Progress',
+				matchFormat: 'T20',
+				inningsScoreList: [
+					{ inningsId: 1, batTeamId: 4, score: 108, wickets: 10, overs: 16.5 },
+					{ inningsId: 2, batTeamId: 9, score: 57, wickets: 3, overs: 6.3, revisedOvers: 17 },
+				],
+			},
+		});
+		const match = buildMatch({
+			header: {
+				matchId: 10,
+				matchFormat: 'T20',
+				state: 'In Progress',
+				status: 'England need 40 runs in 62 balls - DLS Target 98',
+				team1: { id: 4, name: 'Australia', shortName: 'AUS' },
+				team2: { id: 9, name: 'England', shortName: 'ENG' },
+				shortStatus: 'England need 45 runs in 64 balls',
+			},
+			livescoreJson: live,
+			scorecardJson: { scoreCard: [] },
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.shortStatus).toBe('ENG 57/3 (6.3)');
+	});
+
 	it('keeps the toss status before the first ball', () => {
 		const live = livescoreFixture({
 			inningsId: 1,
