@@ -421,6 +421,27 @@ describe('match assembly', () => {
 		expect(match.shortStatus).toBe('ENG 57/3 (6.3)');
 	});
 
+	it('replaces a chase shortStatus once the match is finished', () => {
+		const match = buildMatch({
+			header: {
+				matchId: 11,
+				matchFormat: 'T20',
+				state: 'Complete',
+				status: 'England won by 7 wkts',
+				team1: { id: 4, name: 'Australia', shortName: 'AUS' },
+				team2: { id: 9, name: 'England', shortName: 'ENG' },
+				shortStatus: 'England need 7 runs in 50 balls',
+				result: { resultType: 'win', winningTeam: 'England', winningteamId: 9, winningMargin: 7, winByRuns: false },
+			},
+			livescoreJson: null,
+			scorecardJson: { matchHeader: { state: 'Complete' }, scoreCard: [] },
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.isComplete).toBe(true);
+		expect(match.shortStatus).toBe('ENG won');
+	});
+
 	it('keeps the toss status before the first ball', () => {
 		const live = livescoreFixture({
 			inningsId: 1,

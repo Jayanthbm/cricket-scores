@@ -183,7 +183,7 @@ v2 turns that back into "9.8".
 | runRate | number | 2 decimals |
 | declared | boolean | innings declared |
 | followOn | boolean | innings is a follow-on (147931 innings 3) |
-| revisedOvers | number \| null | innings length after a rain/DLS revision (13 in 178440); null when upstream sends 0 |
+| revisedOvers | number \| null | innings length after a rain/DLS revision (13 in 178440, 17 then 16 in 151352); null when upstream sends 0, and it goes back to null at completion even for a reduced innings - the reduction then survives only in the status/result text |
 | display | string | "318/2 (41.3)" - render this |
 | displayShort | string | "318/2" |
 
@@ -312,6 +312,10 @@ the status text ("2nd Innings reduced to 17 Overs, DLS Target 98") update first,
 while target.runs and remRunsToWin still carry the pre-rain values (109 and 56).
 For a few seconds target.runs is therefore the older number; runsNeeded and
 ballsRemaining stay internally consistent with whatever target.runs says.
+
+When the chase finishes the reduction leaves the structured fields again
+(revisedOvers back to null, target null) but stays in result.text: 151352 ends
+with "England won by 7 wkts (2nd Innings reduced to 16 Overs, DLS Target 93)".
 
 LastWicket:
 

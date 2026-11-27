@@ -375,9 +375,11 @@ export function buildMatch({
 	match.playerOfMatch = buildAwards(awardSource?.playersOfTheMatch, baseUrl);
 	match.playerOfSeries = buildAwards(awardSource?.playersOfTheSeries, baseUrl);
 	match.inningsSummary = scorecardJson ? inningsFromScorecard(scorecardJson, format) : inningsFromHome(homeInfo, homeMatch, format);
-	// The home feed drops finished matches, so give cards a short result label.
-	if (!match.shortStatus && match.isComplete) {
-		match.shortStatus = shortResultText(match.result);
+	// The home feed drops finished matches (or keeps the chase line: 151352 ended
+	// with shortStatus "England need 7 runs in 50 balls"), so give cards a short
+	// result label unless upstream already sent a result-shaped one.
+	if (match.isComplete && (!match.shortStatus || STALE_SHORT_STATUS.test(match.shortStatus))) {
+		match.shortStatus = shortResultText(match.result) || match.shortStatus;
 	}
 
 	// A finished match keeps its final scores in teams/inningsSummary; a live
