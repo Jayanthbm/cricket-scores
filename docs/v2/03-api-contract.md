@@ -117,6 +117,10 @@ Commentary:
   snippets, `commType: "snippet"`), so every INFO entry has a non-empty text.
 - available = false, entries = [] for a match with no commentary payload yet
   (e.g. a match that starts tomorrow).
+- updatedAt is upstream's responseLastUpdated, not when the newest entry was
+  written: it advances every few seconds **during a drinks break** while the
+  newest entry sits 11 minutes in the past (175843: updatedAt 14:13:02Z, newest
+  entry 14:02:56Z). Use entries[0].timestamp for freshness.
 - Only the most recent ~20-25 entries exist upstream, and **all of them are
   from the latest innings** (161285, a finished Test, sent 24 entries all from
   innings 3). `latestInningsOnly` says so explicitly; earlier innings cannot be
