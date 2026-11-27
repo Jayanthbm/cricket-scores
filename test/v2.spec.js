@@ -202,6 +202,33 @@ describe('match assembly', () => {
 		});
 		expect(match.live).toBe(null);
 	});
+
+	it('keeps a no result as COMPLETE with a NO_RESULT result', () => {
+		const match = buildMatch({
+			header: {
+				matchId: 3,
+				matchFormat: 'T20',
+				state: 'Complete',
+				status: 'No result due to rain',
+				result: { resultType: 'no result', winningTeam: '', winByRuns: false, winByInnings: false },
+				team1: { id: 1, name: 'Bermuda', shortName: 'BER' },
+				team2: { id: 2, name: 'Bahamas', shortName: 'BHM' },
+			},
+			scorecardJson: { scoreCard: [] },
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.state).toBe(MATCH_STATE.COMPLETE);
+		expect(match.result).toEqual({
+			type: 'NO_RESULT',
+			text: 'No result due to rain',
+			winnerTeamId: null,
+			winnerTeamName: null,
+			winnerTeamShortName: null,
+			margin: null,
+		});
+		expect(match.live).toBe(null);
+	});
 });
 
 describe('live block', () => {
