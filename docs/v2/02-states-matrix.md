@@ -428,6 +428,41 @@ Practical rules that fall out of the matrix:
 }
 ```
 
+### COMPLETE (innings win, declaration) - 147964 (Bangladesh tour of South Africa, 2nd Test)
+
+```json
+{
+	"id": 147964,
+	"format": "TEST",
+	"state": "COMPLETE",
+	"stateLabel": "Completed",
+	"rawState": "Complete",
+	"status": "South Africa won by an innings and 219 runs",
+	"isComplete": true,
+	"dayNumber": 3,
+	"toss": { "winnerTeamName": "South Africa", "decision": "BOWL", "decisionText": "Bowling" },
+	"result": {
+		"type": "WIN",
+		"text": "South Africa won by an innings and 219 runs",
+		"winnerTeamId": 11,
+		"winnerTeamName": "South Africa",
+		"winnerTeamShortName": "RSA",
+		"margin": { "value": 219, "unit": "INNINGS_AND_RUNS" }
+	},
+	"playerOfMatch": [{ "name": "Wiaan Mulder", "batting": "100", "bowling": "1-15 & 7-31" }],
+	"playerOfSeries": [{ "name": "MJ Ackerman", "batting": "307 Runs" }],
+	"teams": [
+		{ "shortName": "BAN", "score": "91/10 & 184/10" },
+		{
+			"shortName": "RSA",
+			"score": "494/7d",
+			"innings": [{ "display": "494/7d (115)", "declared": true, "followOn": false }]
+		}
+	],
+	"live": null
+}
+```
+
 Note: in a list without enrich=full, toss/result/playerOfMatch may be missing
 for completed matches (they come from the scorecard). live is null for
 finished matches by design (see doc 03).
@@ -475,3 +510,8 @@ margin:
 
 winnerTeamId is matched against the team names in teams[]; if upstream gives
 a winning team id (header.result.winningteamId) that id is used directly.
+
+147964 sets both winByRuns and winByInnings to true; INNINGS_AND_RUNS wins and
+value is the innings margin (219), not a run margin. The declaration itself is
+not in the header, it comes from the innings score: 494/7d carries
+score.declared true and displayShort "494/7d".
