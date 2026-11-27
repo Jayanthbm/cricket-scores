@@ -1,0 +1,477 @@
+# 02 - Match states & formats matrix
+
+The goal: one enum the FE can switch on, whatever the format and whatever the
+scorer's raw wording is.
+
+---
+
+## 1. The enum
+
+| state         | stateLabel    | Meaning                                           | Flags on match                                         |
+| ------------- | ------------- | ------------------------------------------------- | ------------------------------------------------------ |
+| SCHEDULED     | Upcoming      | not started, no toss                              | isUpcoming true                                        |
+| TOSS          | Toss          | toss done, no ball bowled                         | isUpcoming true                                        |
+| LIVE          | Live          | play in progress                                  | isLive true                                            |
+| SESSION_BREAK | Break         | lunch / tea / drinks interval, play resumes today | isLive true, rawState keeps "Tea" / "Lunch" / "Drinks" |
+| INNINGS_BREAK | Innings Break | between innings                                   | isLive true                                            |
+| STUMPS        | Stumps        | end of a day's play (Tests)                       | isLive true                                            |
+| DELAYED       | Delayed       | rain / bad light / interruption                   | isLive true, isDelayed true                            |
+| COMPLETE      | Completed     | result known                                      | isComplete true                                        |
+| ABANDONED     | Abandoned     | called off                                        | isComplete true                                        |
+| UNKNOWN       | Unknown       | raw state we could not classify                   | none                                                   |
+
+Derived booleans (all always present):
+
+- isLive = state in {LIVE, SESSION_BREAK, INNINGS_BREAK, STUMPS, DELAYED}
+- isUpcoming = state in {SCHEDULED, TOSS}
+- isComplete = state in {COMPLETE, ABANDONED}
+- isDelayed = state = DELAYED
+- isSuperOver = status text contains "super over" (separate from state)
+
+Poll on isLive; stop polling when isComplete; show the scorecard tab when
+hasScorecard is true.
+
+## 2. Raw upstream strings -> enum
+
+State is taken from **livescore first**, then the scorecard header, then the
+home feed (that order matters because home lags).
+
+Exact matches (case-insensitive, trimmed):
+
+| Raw                                                       | Enum          |
+| --------------------------------------------------------- | ------------- |
+| Preview, Upcoming, Scheduled                              | SCHEDULED     |
+| Toss                                                      | TOSS          |
+| In Progress, InProgress, Live                             | LIVE          |
+| Tea, Tea Break, Lunch, Lunch Break, Drinks, Session Break | SESSION_BREAK |
+| Innings Break, InningsBreak                               | INNINGS_BREAK |
+| Stumps                                                    | STUMPS        |
+| Delay, Delayed, Rain Delay, Rain, Interrupted             | DELAYED       |
+| Abandoned, Cancelled, Canceled                            | ABANDONED     |
+| Complete, Completed                                       | COMPLETE      |
+
+If there is no exact match, the raw state + status text are tested in this
+order (first hit wins):
+
+1. abandon | called off | cancelled -> ABANDONED
+2. rain | delay | interrupt | wet outfield | bad light | drizzle -> DELAYED
+3. stumps | end of day | close of play -> STUMPS
+4. innings break | end of innings | "break, ... need" -> INNINGS_BREAK
+5. tea | lunch | drinks | session break -> SESSION_BREAK
+6. toss -> TOSS
+7. in progress | live | "need N runs in N balls" -> LIVE
+8. complete | won by | drawn | no result -> COMPLETE
+9. preview | upcoming | match starts | start delayed | yet to start -> SCHEDULED
+10. otherwise -> UNKNOWN
+
+The untouched upstream string is always preserved as rawState. If you find a
+raw state in the wild that lands on UNKNOWN, add it to this table and to
+src/v2/constants.js - that is the whole change.
+
+"Start delayed" intentionally maps to SCHEDULED (it is a pre-toss delay, the
+FE shows the start time), while "Delay"/"Interrupted" during play maps to
+DELAYED - including a toss delayed by rain before any ball is bowled (178440).
+
+"Tea" / "Lunch" / "Drinks" map to SESSION_BREAK: the match is still on today
+(isLive true, keep polling) but nothing is happening. They are checked after
+"Innings Break" so an innings interval never lands on SESSION_BREAK, and before
+"toss" because upstream sometimes keeps the toss text in status all day.
+
+## 3. Formats
+
+| upstream matchFormat          | v2 format   | Innings balls | Powerplay (as seen)                                   |
+| ----------------------------- | ----------- | ------------- | ----------------------------------------------------- |
+| T20, T20I                     | T20         | 120           | Mandatory 0.1-6 (a rain-reduced innings can be 0.1-4) |
+| ODI, ODM                      | ODI         | 300           | Mandatory 0.1-10                                      |
+| TEST                          | TEST        | none (no cap) | none (ppData {})                                      |
+| T10                           | T10         | 60            | usually none                                          |
+| THE_HUNDRED, HUNDRED, THE_100 | THE_HUNDRED | 100           | none                                                  |
+| anything else                 | OTHER       | none          | -                                                     |
+
+Only FORMAT_INNINGS_BALLS entries have a fixed limit; that limit is used to
+derive live.target.ballsRemaining, and it is overridden by
+scoreDetails.revisedOvers whenever that is > 0 (DLS / reduced overs).
+
+Test-specific behaviour:
+
+- score.overs is "97.1", "135.3", ... with no cap; runRate still applies.
+- declared / followOn flags are on every score object (from isDeclared /
+  isFollowOn), so "494/7d" is data, not string parsing.
+- live.test = { day, inningsNumber, teamInningsNumber, leadRuns, trailRuns, target }:
+  - day = "Day N" from the status text, else header.dayNumber
+  - inningsNumber = which innings of the match is being played (1-4, equals
+    live.inningsId), so a side batting its 2nd innings in the 3rd innings of
+    the match gives inningsNumber 3
+  - teamInningsNumber = how many innings this batting side has had (1, 2, ...)
+  - leadRuns / trailRuns parsed from the status text ("lead by 6 runs"), null
+    while the status says something else ("Day 1: 3rd Session")
+  - target = chase target if this innings is a chase, else null
+- The scorecard has 2-4 innings in scoreCard[]; the FE should render the
+  innings tabs from inningsSummary (always present, ordered).
+
+Super overs: upstream exposes them as extra innings (inningsId 3+ in a T20)
+and status text like "Super Over". isSuperOver flags the match; the innings is
+a normal innings object. (Not yet captured live - see doc 04.)
+
+### 3.1 What is actually verified (Nov 2026 capture set)
+
+Legend: **yes** = real payload captured and asserted; **toss** = toss data
+verified but the TOSS _state_ was only captured on a Test; **-** = not
+applicable to the format; **no** = implemented, waiting for a payload.
+
+| format      | SCHEDULED | TOSS | LIVE    | SESSION_BREAK | INNINGS_BREAK | STUMPS  | DELAYED | COMPLETE | ABANDONED | evidence                                                                                                                                                                                                                                                       |
+| ----------- | --------- | ---- | ------- | ------------- | ------------- | ------- | ------- | -------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T20         | yes (3)   | toss | yes     | no            | no            | -       | yes (1) | yes (4)  | no        | 151352 Preview + 151374/175283 Upcoming, 178440 toss delayed by rain (women's T20I final), 175273 live chase, 162941 rain-reduced powerplay, 150931 eliminator, 165321 SMAT                                                                                    |
+| ODI         | toss      | toss | no      | no            | no            | -       | no      | yes (1)  | no        | 177210 chase won by 8 wkts                                                                                                                                                                                                                                     |
+| TEST        | yes (2)   | yes  | yes (3) | yes (1)       | no            | yes (4) | no      | yes (3)  | no        | 161296 preview, 171807 toss then stumps (1 innings), 171830 + 171817 stumps while trailing (2 innings), 171331 tea break, 171340 live day 1, 166697 live day 4 (lead 106), 147964 innings win + declaration, 166687 draw, 166643 draw with a 4th-innings chase |
+| T10         | no        | no   | no      | no            | no            | -       | no      | no       | no        | implemented only (60-ball limit)                                                                                                                                                                                                                               |
+| THE_HUNDRED | no        | no   | no      | no            | no            | -       | no      | no       | no        | implemented only (100-ball limit)                                                                                                                                                                                                                              |
+| OTHER       | no        | no   | no      | no            | no            | -       | no      | no       | no        | falls through to no ball limit                                                                                                                                                                                                                                 |
+
+Format specific things that are verified by those captures:
+
+- **T20**: chase target / required rate / balls remaining, partnership, last
+  wicket from both sources, striker + non-striker, bowler figures, recent ball
+  tokens, DRS (150931, 162941, 175273), win probability (175273), powerplay
+  Mandatory 0.1-6 and a rain-reduced 0.1-4 plus a 15.1-17 "Batting" powerplay
+  (162941), extras and fall of wickets. Both pre-match raw strings are covered:
+  "Preview" (151352) and "Upcoming" (151374, 175283, no commentary at all).
+- **ODI**: 50-over / 300-ball limit, Mandatory powerplay 0.1-10, result margin
+  in wickets, toss, player of the match, extras, partnerships.
+- **TEST**: day number, lead/trail (both directions: lead 106 in 166697, trail 158
+  and 88 in 171830/171817), innings number, declaration (147964 innings 2), no
+  ball limit, no powerplay, 2-4 innings in inningsSummary, no live target.
+  Live coverage is three shapes: mid-session on day 1 with no lead yet (171340,
+  228/6, leadRuns null), day 4 with a lead and three innings (166697,
+  inningsNumber 3, teamInningsNumber 2), and stumps on 1 and 2 innings
+  (171807, 171830, 171817). A draw that still had a 4th-innings chase target is
+  covered by 166643 (result DRAW, winner fields all null, live null, 75/3
+  chasing 201).
+- **SESSION_BREAK**: 171331 (Plunket Shield tea) is the live-verified case; the
+  score, batsmen, bowlers and lastWicket are all still present, only play has
+  stopped.
+- **DELAYED**: 178440 (women's T20I final, "Toss delayed due to rain") is a
+  pre-toss delay: isDelayed true, live null, no scores, toss null, comm has the
+  pre-match INFO entries. An in-play rain delay is still missing.
+
+### 3.2 What still needs a match id
+
+Send the id when you see one of these; every item below is implemented but has
+no real payload behind it yet.
+
+| required                          | why it matters                                                                                                            |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| T20 at TOSS                       | the TOSS state was only captured on a four-day Test; toss fields are verified, the state transition is not                |
+| ODI live (any phase)              | the only ODI payload is a completed chase; mid-innings target/RRR/powerplay unverified                                    |
+| T10 match                         | format limit 60, no powerplay assumed                                                                                     |
+| THE_HUNDRED match                 | format limit 100, no powerplay assumed                                                                                    |
+| an innings break                  | tests the state, whether target appears before the chase starts, and inningsId flipping                                   |
+| in-play rain delay / interruption | DELAYED is only verified for a pre-toss delay (178440); need the mid-innings flavour and to see whether the score freezes |
+| lunch or drinks break             | only Tea (171331) is captured; Lunch/Drinks share the mapping but not the payload                                         |
+| a DLS chase in progress           | revisedOvers > 0 while batting (we only saw it after the fact, 162941)                                                    |
+| abandoned or no result            | ABANDONED / NO_RESULT result types and empty scorecards                                                                   |
+| a tied match, and a super over    | TIE result, isSuperOver, extra innings ids                                                                                |
+| a Test follow-on innings          | score.followOn true is implemented but never observed                                                                     |
+| an ODI or T20 with winProbability | only 175273 carried it so far                                                                                             |
+
+Doc 04 lists the questions each capture has to answer.
+
+## 4. State x payload matrix
+
+What upstream returns and therefore what v2 can populate.
+
+| state               | livescore                                       | scorecard                        | comm                      | v2 match fields that are meaningfully filled                                                                              |
+| ------------------- | ----------------------------------------------- | -------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| SCHEDULED (Preview) | yes (status "Match starts at ...", inningsId 0) | yes (header only; empty innings) | 204 or INFO-only (squads) | teams (no scores), series, venue, startTime, toss null, result null, playerOfMatch usually []                             |
+| TOSS                | yes (status "X opt to bat", no score)           | yes (header, tossResults)        | INFO entries              | toss populated, teams no scores, live null                                                                                |
+| LIVE                | yes                                             | yes                              | yes                       | everything: live.score/target/partnership/lastWicket/batsmen/bowlers/drs/winProbability, teams scores, isBatting          |
+| SESSION_BREAK       | yes (status "Day 1: Tea Break")                 | yes                              | yes                       | everything LIVE has, but play is paused; rawState keeps Tea/Lunch/Drinks                                                  |
+| INNINGS_BREAK       | yes (status "Innings Break")                    | yes                              | yes                       | live.score of finished innings, target null until 2nd innings starts, teams scores, lastWicket                            |
+| STUMPS              | yes (status "Day 3: Stumps - ...")              | yes                              | yes                       | live.test.day, leadRuns/trailRuns, inningsSummary 2-4 innings                                                             |
+| DELAYED             | yes (status "Rain delay" etc.)                  | yes                              | yes                       | live.score frozen, isDelayed true. A pre-toss delay (178440) has no innings at all: live null, toss null, teams no scores |
+| COMPLETE            | yes (status = result text)                      | yes                              | yes                       | result, playerOfMatch (may lag), inningsSummary final, live.target null, winProbability null                              |
+| ABANDONED           | yes (status "Match abandoned")                  | yes                              | maybe 204                 | result.type ABANDONED / NO_RESULT, no scores                                                                              |
+| UNKNOWN             | whatever                                        | whatever                         | whatever                  | teams + rawState only                                                                                                     |
+
+Practical rules that fall out of the matrix:
+
+- toss is only reliable when hasScorecard is true, or when state >= TOSS. On a
+  list with enrich=none it can be null.
+- playerOfMatch is empty for matches that just finished (upstream lag). Show
+  "Awards" only when non-empty, or refetch the hub after a few minutes.
+- commentary for a not-started match is either 204 (no payload) or INFO-only
+  entries ("Squads:", "Venue", ...) with inningsId 0.
+- winProbability is live-only and optional per match.
+
+## 5. Real examples (captured Nov 2026)
+
+### SCHEDULED - 161296 (Test, starts later)
+
+```json
+{
+	"id": 161296,
+	"format": "TEST",
+	"state": "SCHEDULED",
+	"stateLabel": "Upcoming",
+	"rawState": "Preview",
+	"status": "Match starts at Nov 26, 22:00 GMT",
+	"isLive": false,
+	"isUpcoming": true,
+	"isComplete": false,
+	"startTime": "2026-11-26T22:00:00.000Z",
+	"startTimeText": "27 Nov 2026, 03:30 AM IST",
+	"teams": [
+		{ "id": 13, "name": "New Zealand", "shortName": "NZ", "score": null, "overs": null, "isBatting": false, "innings": [] },
+		{ "id": 2, "name": "India", "shortName": "IND", "score": null, "overs": null, "isBatting": false, "innings": [] }
+	],
+	"toss": null,
+	"result": null,
+	"playerOfMatch": [],
+	"inningsSummary": [],
+	"live": null
+}
+```
+
+### TOSS - 171807 (CSA four-day, captured at the toss; now stumps)
+
+```json
+{
+	"id": 171807,
+	"format": "TEST",
+	"state": "TOSS",
+	"stateLabel": "Toss",
+	"rawState": "Toss",
+	"status": "Knights opt to bat",
+	"isLive": false,
+	"toss": { "winnerTeamId": 281, "winnerTeamName": "Knights", "winnerTeamShortName": "KNG", "decision": "BAT", "decisionText": "Batting" },
+	"teams": [
+		{ "shortName": "BOL", "score": null, "isBatting": false },
+		{ "shortName": "KNG", "score": null, "isBatting": false }
+	],
+	"live": null
+}
+```
+
+### LIVE - 178523 (T20 chase in progress)
+
+```json
+{
+	"id": 178523,
+	"format": "T20",
+	"state": "LIVE",
+	"stateLabel": "Live",
+	"rawState": "In Progress",
+	"status": "Andaman Admirals need 51 runs in 66 balls",
+	"isLive": true,
+	"teams": [
+		{ "shortName": "AMA", "score": "54/8", "overs": "9", "isBatting": true },
+		{ "shortName": "UPK", "score": "104/7", "overs": "9", "isBatting": false }
+	],
+	"live": {
+		"inningsId": 2,
+		"score": { "runs": 54, "wickets": 8, "overs": "9", "balls": 54, "runRate": 6, "display": "54/8 (9)" },
+		"target": { "runs": 105, "runsNeeded": 51, "ballsRemaining": 66, "requiredRunRate": 4.64, "requiredRunsPerBall": null },
+		"partnership": { "runs": 1, "balls": 1, "display": "1 (1)" },
+		"lastWicket": {
+			"text": "S BalaKrishna   b Ratnesh Singh 15(14)  - 53/8 in 8.5 ov.",
+			"batter": "S BalaKrishna",
+			"dismissal": "b Ratnesh Singh",
+			"runs": 15,
+			"balls": 14,
+			"score": "53/8",
+			"overs": "8.5",
+			"wicketNumber": 8,
+			"isLatest": true,
+			"source": "LIVESCORE"
+		},
+		"drs": null,
+		"winProbability": null,
+		"test": null
+	}
+}
+```
+
+### STUMPS - 166697 (Sheffield Shield, day 3)
+
+```json
+{
+	"id": 166697,
+	"format": "TEST",
+	"state": "STUMPS",
+	"stateLabel": "Stumps",
+	"rawState": "Stumps",
+	"status": "Day 3: Stumps - South Australia lead by 6 runs",
+	"isLive": true,
+	"live": {
+		"test": { "day": 3, "inningsNumber": 3, "teamInningsNumber": 2, "leadRuns": 6, "trailRuns": null, "target": null }
+	},
+	"inningsSummary": [
+		{ "inningsId": 1, "team": { "shortName": "SAUS" }, "score": { "display": "287/10 (97.1)" } },
+		{ "inningsId": 2, "team": { "shortName": "VIC" }, "score": { "display": "417/10 (135.3)" } },
+		{ "inningsId": 3, "team": { "shortName": "SAUS" }, "score": { "display": "136/2 (47)" } }
+	]
+}
+```
+
+### COMPLETE - 177210 (ODI, POM available)
+
+```json
+{
+	"id": 177210,
+	"format": "ODI",
+	"state": "COMPLETE",
+	"stateLabel": "Completed",
+	"rawState": "Complete",
+	"status": "Sri Lanka A won by 8 wkts",
+	"isComplete": true,
+	"toss": { "winnerTeamName": "India A", "decision": "BAT", "decisionText": "Batting" },
+	"result": {
+		"type": "WIN",
+		"text": "Sri Lanka A won by 8 wkts",
+		"winnerTeamId": 43,
+		"winnerTeamName": "Sri Lanka A",
+		"winnerTeamShortName": "SLA",
+		"margin": { "value": 8, "unit": "WICKETS" }
+	},
+	"playerOfMatch": [
+		{
+			"id": 52736,
+			"name": "Sineth Jayawardena",
+			"teamId": 0,
+			"teamName": "",
+			"faceImageUrl": "https://.../v2/player-icon/182026/sineth-jayawardena",
+			"batting": "105(70)",
+			"bowling": ""
+		}
+	],
+	"teams": [
+		{ "shortName": "INDA", "score": "317/8", "overs": "50", "isBatting": false },
+		{ "shortName": "SLA", "score": "318/2", "overs": "41.3", "isBatting": false }
+	],
+	"live": null
+}
+```
+
+### SESSION_BREAK - 171331 (Plunket Shield, tea on day 1)
+
+```json
+{
+	"id": 171331,
+	"format": "TEST",
+	"state": "SESSION_BREAK",
+	"stateLabel": "Break",
+	"rawState": "Tea",
+	"status": "Day 1: Tea Break",
+	"isLive": true,
+	"teams": [
+		{ "shortName": "ND", "score": null, "isBatting": false },
+		{ "shortName": "CD", "score": "194/10", "overs": "61.4", "isBatting": false }
+	],
+	"live": {
+		"inningsId": 1,
+		"score": { "display": "194/10 (61.4)" },
+		"test": { "day": 1, "inningsNumber": 1, "teamInningsNumber": 1, "leadRuns": null, "trailRuns": null, "target": null }
+	}
+}
+```
+
+### DELAYED - 178440 (women's T20I final, toss delayed by rain)
+
+```json
+{
+	"id": 178440,
+	"format": "T20",
+	"state": "DELAYED",
+	"stateLabel": "Delayed",
+	"rawState": "Delay",
+	"status": "Toss delayed due to rain",
+	"isLive": true,
+	"isDelayed": true,
+	"isUpcoming": false,
+	"isComplete": false,
+	"teams": [
+		{ "shortName": "IDNW", "score": null, "overs": null, "isBatting": false },
+		{ "shortName": "MLYW", "score": null, "overs": null, "isBatting": false }
+	],
+	"toss": null,
+	"result": null,
+	"inningsSummary": [],
+	"live": null
+}
+```
+
+### COMPLETE (draw) - 166643 (Sheffield Shield, 4th innings abandoned as a draw)
+
+```json
+{
+	"id": 166643,
+	"format": "TEST",
+	"state": "COMPLETE",
+	"stateLabel": "Completed",
+	"rawState": "Complete",
+	"status": "Match drawn",
+	"isComplete": true,
+	"result": {
+		"type": "DRAW",
+		"text": "Match drawn",
+		"winnerTeamId": null,
+		"winnerTeamName": null,
+		"winnerTeamShortName": null,
+		"margin": null
+	},
+	"playerOfMatch": [{ "name": "Jack Clayton" }],
+	"teams": [
+		{ "shortName": "QL", "score": "280/10 & 75/3" },
+		{ "shortName": "VIC", "score": "307/10 & 173/10" }
+	],
+	"live": null
+}
+```
+
+Note: in a list without enrich=full, toss/result/playerOfMatch may be missing
+for completed matches (they come from the scorecard). live is null for
+finished matches by design (see doc 03).
+
+## 6. States we have NOT captured live yet
+
+These are implemented from the enum + keyword fallback, but no real payload was
+recorded. The capture plan in doc 04 targets them; treat the expectations below
+as hypotheses to verify.
+
+| State             | Expected upstream signal                                                        | What to verify                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| INNINGS_BREAK     | livescore state "Innings Break", status like "Innings Break" or "X need Y runs" | does inningsId flip immediately? is target already the new target? does comm switch innings?               |
+| DELAYED (in-play) | state "Delay"/"Interrupted", status with rain                                   | is inningsId stable? do overs/batsmen freeze? is DRS reset? (only the pre-toss delay, 178440, is captured) |
+| ABANDONED         | state "Abandoned"/"No Result", result text                                      | is matchHeader.complete true or false? are innings empty?                                                  |
+| TIE               | status "Match tied", result.resultType "TIE"                                    | margin object (value/unit) when tied                                                                       |
+| NO_RESULT         | status "No result", result.resultType "NO_RESULT"                               | result.type must be NO_RESULT, not WIN                                                                     |
+| SUPER OVER        | status "Super Over", extra inningsId                                            | inningsSummary order, target reset, isSuperOver flag                                                       |
+
+## 7. Result normalisation
+
+result is built from the scorecard header (preferred) plus the status text:
+
+| result.type | When                                                           |
+| ----------- | -------------------------------------------------------------- |
+| WIN         | header.result.resultType is a win, or status contains "won by" |
+| DRAW        | status contains "drawn" or resultType DRAW                     |
+| TIE         | status contains "tie" or resultType TIE                        |
+| NO_RESULT   | status contains "no result" or resultType NO_RESULT            |
+| ABANDONED   | status contains "abandon" or resultType ABANDONED              |
+| null        | nothing conclusive (match not finished)                        |
+
+winnerTeamId / winnerTeamName / winnerTeamShortName are populated for WIN only;
+they are null for DRAW, TIE, NO_RESULT and ABANDONED (166643 is the verified
+draw case).
+
+margin:
+
+| unit             | Meaning                      | Example                                          |
+| ---------------- | ---------------------------- | ------------------------------------------------ |
+| RUNS             | won by N runs                | "won by 36 runs" -> { value: 36, unit: "RUNS" }  |
+| WICKETS          | won by N wickets             | "won by 8 wkts" -> { value: 8, unit: "WICKETS" } |
+| INNINGS          | won by an innings            | { value: null, unit: "INNINGS" }                 |
+| INNINGS_AND_RUNS | won by an innings and N runs | { value: N, unit: "INNINGS_AND_RUNS" }           |
+
+winnerTeamId is matched against the team names in teams[]; if upstream gives
+a winning team id (header.result.winningteamId) that id is used directly.

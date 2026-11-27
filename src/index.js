@@ -2,11 +2,19 @@ import { getMatches } from './routes/matches';
 import { getMatchDetails } from './routes/matchDetails';
 import { error, preflight } from './utils/response';
 import { getTeamIcon } from './routes/teamIcon';
+import { handleV2 } from './v2';
 
 export default {
 	async fetch(request) {
 		if (request.method === 'OPTIONS') {
 			return preflight();
+		}
+
+		// v2 is additive: it only answers /v2/* and returns null for every other path.
+		const v2Response = await handleV2(request);
+
+		if (v2Response) {
+			return v2Response;
 		}
 
 		if (request.method !== 'GET') {
