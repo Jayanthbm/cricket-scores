@@ -73,6 +73,13 @@ data: { "match": Match }
 404 MATCH_NOT_FOUND when neither the scorecard nor the home feed knows the id.
 MATCH_NOT_FOUND is always used for an unresolvable match id (never NOT_FOUND).
 
+state follows rawState, except when the status already announces a decided
+result ("won by N runs/wkts"): 162951 reported rawState "In Progress" for 21s
+after the last ball while the status read "Perth Scorchers Women won by 17
+runs". That window now normalises to COMPLETE, so isLive flips false and the
+stale shortStatus ("Need 27 off 4b") is replaced with a result label. A tie is
+not promoted this way, because a tie can still go to a super over.
+
 ## 3. GET /v2/matches/:id/live
 
 Same match object as the hub, built from livescore + scorecard only (no home

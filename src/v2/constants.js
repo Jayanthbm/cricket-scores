@@ -73,15 +73,26 @@ const RAW_STATE_MAP = {
 	canceled: MATCH_STATE.ABANDONED,
 };
 
+// The result can be announced before the raw state flips: 162951 spent 21s at
+// rawState "In Progress" with status "Perth Scorchers Women won by 17 runs" and
+// a stale "Need 27 off 4b", so isLive stayed true after the last ball. Only a
+// decided result matches here - "tied" is not, because a tie can still go to a
+// super over.
+const RESULT_ANNOUNCED = /\bwon by\b|(?<!to )\bwin by \d/;
+
 export function normalizeState(rawState, status = '') {
 	const raw = String(rawState || '').trim();
 	const direct = RAW_STATE_MAP[raw.toLowerCase()];
 
 	if (direct) {
-		return direct;
+		return direct === MATCH_STATE.LIVE && RESULT_ANNOUNCED.test(status) ? MATCH_STATE.COMPLETE : direct;
 	}
 
 	const text = `${raw} ${status}`.toLowerCase();
+
+	if (RESULT_ANNOUNCED.test(text)) {
+		return MATCH_STATE.COMPLETE;
+	}
 
 	if (/abandon|called off|cancelled/.test(text)) {
 		return MATCH_STATE.ABANDONED;

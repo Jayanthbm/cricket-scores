@@ -105,6 +105,16 @@ describe('state normalisation', () => {
 		expect(normalizeState('Abandon')).toBe(MATCH_STATE.ABANDONED);
 	});
 
+	it('completes the match once the result is announced, ahead of the raw state', () => {
+		// 162951: rawState "In Progress", status already decided
+		expect(normalizeState('In Progress', 'Perth Scorchers Women won by 17 runs')).toBe(MATCH_STATE.COMPLETE);
+		expect(normalizeState('In Progress', 'India win by 5 wickets')).toBe(MATCH_STATE.COMPLETE);
+		// a chase line, a "to win by" target and a toss sentence are not results
+		expect(normalizeState('In Progress', 'Hobart Hurricanes Women need 27 runs in 5 balls')).toBe(MATCH_STATE.LIVE);
+		expect(normalizeState('In Progress', 'India need 20 runs to win by 4 wickets')).toBe(MATCH_STATE.LIVE);
+		expect(normalizeState('Toss', 'Perth Scorchers Women won the toss and opt to bat')).toBe(MATCH_STATE.TOSS);
+	});
+
 	it('falls back to status keywords', () => {
 		expect(normalizeState('', 'Match abandoned due to rain')).toBe(MATCH_STATE.ABANDONED);
 		expect(normalizeState('', 'Rain delay')).toBe(MATCH_STATE.DELAYED);
