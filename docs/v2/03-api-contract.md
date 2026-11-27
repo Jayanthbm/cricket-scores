@@ -100,6 +100,7 @@ Commentary:
 {
   "available": true,
   "inningsId": 2,
+  "latestInningsOnly": true,
   "entries": [ Entry, ... ],
   "updatedAt": "2026-11-26T18:31:22.000Z"
 }
@@ -109,8 +110,10 @@ Commentary:
   snippets, `commType: "snippet"`), so every INFO entry has a non-empty text.
 - available = false, entries = [] for a match with no commentary payload yet
   (e.g. a match that starts tomorrow).
-- Only the most recent ~20-25 entries exist upstream; this is not a full
-  innings history.
+- Only the most recent ~20-25 entries exist upstream, and **all of them are
+  from the latest innings** (161285, a finished Test, sent 24 entries all from
+  innings 3). `latestInningsOnly` says so explicitly; earlier innings cannot be
+  requested - there is no pagination.
 
 404 MATCH_NOT_FOUND only when neither commentary, livescore nor the scorecard
 header knows the match.

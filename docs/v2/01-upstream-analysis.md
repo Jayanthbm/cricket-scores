@@ -270,8 +270,14 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
   ", out Bowled!!", ", wide", ", no ball, 1 run", ", byes, 1 run",
   ", leg byes, 1 run", ", Caught&Bowled!!".
 - responseLastUpdated here is **seconds** (10 digits), unlike livescore.
-- Only the most recent ~20-25 entries come back, for the **current innings**
-  (inningsId flips when the innings changes). No pagination (403).
+- Only the most recent ~20-25 entries come back, for the **latest innings
+  only** - a finished Test (161285, three innings) returned 24 entries all with
+  inningsId 3, and 166697 returned 23 all with inningsId 4. Earlier innings
+  never appear and there is no pagination (403), so a commentary feed cannot
+  cross an innings boundary.
+- The tail of that window also loses ball numbers: only 6 of 161285's 24
+  entries carried ballMetric (18 of 166697's 23), so most entries arrive as
+  INFO prose rather than a BALL row.
 
 ## 8. Data quirks checklist
 

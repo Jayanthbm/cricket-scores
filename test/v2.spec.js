@@ -1,10 +1,51 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { buildCommentary } from '../src/v2/commentary';
+import { fetchScorecard } from '../src/v2/client';
 import { MATCH_STATE, detectFormat, normalizeFormat, normalizeState } from '../src/v2/constants';
 import { buildLive } from '../src/v2/live';
 import { buildMatch } from '../src/v2/match';
 import { buildScorecard } from '../src/v2/scorecard';
 import { ballsToOvers, oversToBalls, scoreLine, toEpochIso } from '../src/v2/utils';
+
+describe('upstream client', () => {
+	it('retries once when the first attempt fails', async () => {
+		const calls = [];
+		vi.stubGlobal('fetch', async (url) => {
+			calls.push(String(url));
+
+			if (calls.length === 1) {
+				throw new Error('socket hang up');
+			}
+
+			return new Response(JSON.stringify({ matchHeader: { state: 'Complete' } }), { status: 200 });
+		});
+
+		try {
+			const payload = await fetchScorecard(161285);
+
+			expect(payload).toEqual({ matchHeader: { state: 'Complete' } });
+			expect(calls).toHaveLength(2);
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it('does not retry a 204', async () => {
+		let calls = 0;
+		vi.stubGlobal('fetch', async () => {
+			calls += 1;
+
+			return new Response(null, { status: 204 });
+		});
+
+		try {
+			expect(await fetchScorecard(1)).toBe(null);
+			expect(calls).toBe(1);
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+});
 
 describe('overs helpers', () => {
 	it('normalises the scorer 6-ball quirk', () => {
@@ -706,6 +747,9 @@ describe('commentary', () => {
 		});
 		expect(commentary.entries[1]).toMatchObject({ outcome: 'FOUR', runs: 4, isBoundary: true, over: 19, ball: 6, label: '19.6' });
 		expect(commentary.entries[2]).toMatchObject({ outcome: 'WICKET', isWicket: true, runs: 0 });
+		// upstream never sends earlier innings in this payload (161285: 24 entries,
+		// all innings 3), so clients are told the feed is latest-innings only
+		expect(commentary.latestInningsOnly).toBe(true);
 	});
 
 	it('handles an empty commentary payload', () => {

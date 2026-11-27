@@ -12,7 +12,35 @@ export class UpstreamError extends Error {
 	}
 }
 
+// A single upstream blip used to null the scorecard for a whole request (a
+// completed Test came back with hasScorecard false and no innings), so a
+// timeout, a network error or a 5xx gets one more attempt. 204 and 4xx do not:
+// those are real answers.
+function isRetryable(error) {
+	return error.code === 'UPSTREAM_TIMEOUT' || error.upstreamStatus === null || error.upstreamStatus >= 500;
+}
+
 async function getJson(path) {
+	let lastError = null;
+
+	for (let attempt = 0; attempt < 2; attempt += 1) {
+		try {
+			return await getJsonOnce(path);
+		} catch (error) {
+			lastError = error;
+
+			if (attempt === 1 || !(error instanceof UpstreamError) || !isRetryable(error)) {
+				throw error;
+			}
+
+			await new Promise((resolve) => setTimeout(resolve, 120));
+		}
+	}
+
+	throw lastError;
+}
+
+async function getJsonOnce(path) {
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
 

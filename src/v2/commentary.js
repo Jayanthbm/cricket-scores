@@ -257,6 +257,9 @@ export function buildCommentary(commJson) {
 	return {
 		available: true,
 		inningsId: latestBall ? latestBall.inningsId : (entries.find((entry) => entry.inningsId)?.inningsId ?? null),
+		// Upstream never sends earlier innings here (161285, a finished Test, had
+		// 24 entries all from innings 3, and 166697 had 23 all from innings 4).
+		latestInningsOnly: true,
 		entries,
 		updatedAt: toIso(commJson.responseLastUpdated),
 	};
