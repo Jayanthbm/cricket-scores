@@ -38,6 +38,18 @@ function winnerFromStatus(status = '') {
 	return match ? match[1].trim() : '';
 }
 
+function winnerFromSuperOverStatus(status = '', teams = []) {
+	const match = String(status).match(/tied\s*\(([^)]+?)\s+won the super over\)/i);
+
+	if (!match) {
+		return null;
+	}
+
+	const name = match[1].trim();
+
+	return teams.find((team) => team.name === name || team.shortName === name) || null;
+}
+
 function resultTypeFromStatus(status = '') {
 	const text = String(status);
 
@@ -98,6 +110,9 @@ function buildResult(header, status, teams) {
 		return null;
 	}
 
+	// A tie decided by a super over does have a winner; upstream only names it
+	// inside the status text ("Match tied (Delhi Capitals won the Super Over)").
+	const superOverWinner = type === 'TIE' ? winnerFromSuperOverStatus(status, teams) : null;
 	const winnerTeamName = raw.winningTeam || (type === 'WIN' ? winnerFromStatus(status) : '');
 	const matchedTeam = teams.find((team) => team.name === winnerTeamName || team.shortName === winnerTeamName);
 	const winnerTeamId = toNumber(raw.winningteamId) || matchedTeam?.id || 0;
@@ -114,13 +129,14 @@ function buildResult(header, status, teams) {
 	// Draws, ties, no-results and abandonments have no winning side: keep every
 	// winner field null instead of leaking 0 / '' for the client to filter out.
 	const isWin = type === 'WIN';
+	const decidedWinner = isWin ? matchedTeam || null : superOverWinner;
 
 	return {
 		type,
 		text: status || header?.status || '',
-		winnerTeamId: isWin ? winnerTeamId || null : null,
-		winnerTeamName: isWin ? winnerTeamName || matchedTeam?.name || null : null,
-		winnerTeamShortName: isWin ? matchedTeam?.shortName || null : null,
+		winnerTeamId: isWin ? winnerTeamId || null : (decidedWinner?.id ?? null),
+		winnerTeamName: isWin ? winnerTeamName || matchedTeam?.name || null : (decidedWinner?.name ?? null),
+		winnerTeamShortName: isWin ? matchedTeam?.shortName || null : (decidedWinner?.shortName ?? null),
 		margin,
 	};
 }

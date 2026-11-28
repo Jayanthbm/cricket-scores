@@ -796,8 +796,8 @@ as hypotheses to verify.
 | State             | Expected upstream signal                      | What to verify                                                                                                                                                                      |
 | ----------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | DELAYED (in-play) | state "Delay"/"Interrupted", status with rain | ~~answered by 151352~~: inningsId, overs, batsmen and target freeze, isDelayed+isLive both true, DRS untouched; resumption clears isDelayed and keeps target when no overs are lost |
-| TIE               | status "Match tied", result.resultType "TIE"  | margin object (value/unit) when tied                                                                                                                                                |
-| SUPER OVER        | status "Super Over", extra inningsId          | inningsSummary order, target reset, isSuperOver flag                                                                                                                                |
+| TIE               | status "Match tied", result.resultType "tie"  | 115165: type TIE, winningTeam "", margin null, both innings level; a tie decided by a super over does name a winner in the status text                                              |
+| SUPER OVER        | status "... won the Super Over"               | 115165: the super over adds **no** innings (scoreCard stays at 2, there is no inningsId 3); isSuperOver comes from the status text and the winner is parsed out of it               |
 
 ## 7. Result normalisation
 
@@ -812,9 +812,11 @@ result is built from the scorecard header (preferred) plus the status text:
 | ABANDONED   | status contains "abandon" or resultType ABANDONED              |
 | null        | nothing conclusive (match not finished)                        |
 
-winnerTeamId / winnerTeamName / winnerTeamShortName are populated for WIN only;
-they are null for DRAW, TIE, NO_RESULT and ABANDONED (166643 draw, 161260
-ABANDONED, 161487 NO_RESULT are the verified cases).
+winnerTeamId / winnerTeamName / winnerTeamShortName are populated for WIN, and
+for a TIE decided by a super over (115165: the winner is parsed out of "Match
+tied (Delhi Capitals won the Super Over)"). They are null for DRAW, for a TIE
+without a super over, for NO_RESULT and for ABANDONED (166643 draw, 161260
+ABANDONED, 161487 NO_RESULT are the verified cases); margin stays null on a tie.
 
 NO_RESULT is a **result type, not a state**: a rain washout mid-innings keeps
 state COMPLETE / isComplete true and only the result changes (161487). ABANDONED

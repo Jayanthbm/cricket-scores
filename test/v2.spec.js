@@ -1120,3 +1120,54 @@ describe('commentary', () => {
 		});
 	});
 });
+
+describe('tie decided by a super over', () => {
+	// 115165 DC vs RR, IPL 2025: upstream reports resultType "tie" with an
+	// empty winningTeam and no extra innings - the winner only exists in prose.
+	const header = {
+		matchId: 115165,
+		matchFormat: 'T20',
+		state: 'Complete',
+		status: 'Match tied (Delhi Capitals won the Super Over)',
+		result: { resultType: 'tie', winningTeam: '', winByRuns: false, winByInnings: false },
+		team1: { id: 61, name: 'Delhi Capitals', shortName: 'DC' },
+		team2: { id: 64, name: 'Rajasthan Royals', shortName: 'RR' },
+		complete: true,
+	};
+	const scorecard = {
+		matchHeader: header,
+		scoreCard: [
+			{
+				inningsId: 1,
+				batTeamDetails: { batTeamId: 61, batTeamName: 'Delhi Capitals', batTeamShortName: 'DC' },
+				scoreDetails: { runs: 188, wickets: 5, overs: 20 },
+			},
+			{
+				inningsId: 2,
+				batTeamDetails: { batTeamId: 64, batTeamName: 'Rajasthan Royals', batTeamShortName: 'RR' },
+				scoreDetails: { runs: 188, wickets: 4, overs: 20 },
+			},
+		],
+	};
+
+	it('names the super-over winner and keeps type TIE', () => {
+		const match = buildMatch({
+			header,
+			scorecardJson: scorecard,
+			livescoreJson: null,
+			baseUrl: 'https://example.test/v2',
+			hasScorecard: true,
+		});
+
+		expect(match.state).toBe('COMPLETE');
+		expect(match.isSuperOver).toBe(true);
+		expect(match.result).toMatchObject({
+			type: 'TIE',
+			winnerTeamId: 61,
+			winnerTeamName: 'Delhi Capitals',
+			winnerTeamShortName: 'DC',
+			margin: null,
+		});
+		expect(match.teams.map((team) => team.score)).toEqual(['188/5', '188/4']);
+	});
+});

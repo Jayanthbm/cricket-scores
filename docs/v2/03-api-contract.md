@@ -235,8 +235,11 @@ carries no matchHeader at all (175843 at its toss).
 }
 ```
 
-winnerTeamId, winnerTeamName and winnerTeamShortName are all null unless type
-is WIN (draws, ties, no-results and abandonments have no winning side).
+winnerTeamId, winnerTeamName and winnerTeamShortName are null for DRAW, NO_RESULT
+and ABANDONED, and for a plain TIE. They are set for WIN, and also for a TIE
+decided by a super over: 115165 returned resultType "tie" with an empty
+winningTeam, so v2 parses the winner from "Match tied (Delhi Capitals won the
+Super Over)". margin stays null on a tie.
 
 shortStatus is upstream's home-feed label and can still be a chase line after
 the result (177214 ended on "Need 1 off 29b"), so a finished match replaces any
