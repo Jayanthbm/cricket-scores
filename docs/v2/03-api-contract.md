@@ -204,16 +204,16 @@ v2 turns that back into "9.8".
 
 ### 6.3 TeamCard
 
-| Field     | Type        | Notes                                          |
-| --------- | ----------- | ---------------------------------------------- |
-| id        | number      |                                                |
-| name      | string      |                                                |
-| shortName | string      |                                                |
-| icon      | string/null | proxy URL /team-icon/{imageId}/{shortName}     |
-| isBatting | boolean     | true only while the match is live-ish          |
-| score     | string/null | current/last innings "171/7", null before play |
-| overs     | string/null | "20", null before play                         |
-| innings   | Score[]     | every innings of this team, ordered            |
+| Field     | Type        | Notes                                                                                                                                                          |
+| --------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id        | number      |                                                                                                                                                                |
+| name      | string      |                                                                                                                                                                |
+| shortName | string      |                                                                                                                                                                |
+| icon      | string/null | proxy URL /team-icon/{imageId}/{shortName}                                                                                                                     |
+| isBatting | boolean     | true only while the match is live-ish                                                                                                                          |
+| score     | string/null | "171/7" live; a side that has batted twice joins its innings with " & " ("287/10 & 277/10", "720/9d"); null before play. Per-innings detail stays in `innings` |
+| overs     | string/null | "20", null before play                                                                                                                                         |
+| innings   | Score[]     | every innings of this team, ordered                                                                                                                            |
 
 ### 6.4 Toss / Result / Player
 
