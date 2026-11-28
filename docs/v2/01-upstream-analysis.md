@@ -356,7 +356,7 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
 
 23. **LIVE can begin while status still shows the toss.** 175290 flipped to
     LIVE at 15:31:58 with score 0/0 (0) and status still "Desert Vipers opt to
-    bowl"; by 0.4 overs it read "MI Emirat5es 4/0 (0.4)". So state leads the
+    bowl"; by 0.4 overs it read "MI Emirates 4/0 (0.4)". So state leads the
     score line by at least a ball, same pattern as COMPLETE where status leads
     rawState. v2 passes both through untouched; clients should render
     state/score, not status, at the moment of transition.
