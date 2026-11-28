@@ -31,9 +31,12 @@ mcenter/teams, mcenter/team/{id}, player/{id}, playerDetails/{id}.
 
 Consequences for v2:
 
-- **No playing XI / squads.** matchHeader.team1.playerDetails and team2.playerDetails
-  are always empty arrays. The only squad-ish signal is commentary INFO entries
-  ("Squads:", "X, right handed bat, comes to the crease").
+- **No playing XI / squads in the JSON API.** matchHeader.team1.playerDetails
+  and team2.playerDetails are always empty arrays, and every /api/mcenter path
+  probed for it 404s (squad, squads, match-squads, team-squad, teams, match-team,
+  /api/cricket-match/{id}/squads, /api/match/{id}). The only JSON squad signal is
+  commentary INFO entries ("Squads:", "X, right handed bat, comes to the crease").
+  The data does exist, but only as a **server-rendered page** — see quirk 23.
 - **No pagination for commentary.** (See section 3.) v2 returns the ~20-25
   most recent entries only.
 - No venue stats, no weather/forecast, no series table, no career stats.
@@ -336,7 +339,22 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
     "(... , DLS Target 93)" five minutes later, and "(... DLS Target 93)" now;
     punctuation and separators change, the outcome does not. Never parse
     result.text - result.type and margin are stable.
-22. **A completed match keeps its livescore body but drops state and status**
+22. **Playing XI exists only in an HTML page, not in any JSON API.** The
+    web scorecard page is server-rendered (its only XHRs are views-counter,
+    runtime-config and adverts), and the XI lives at
+    `/cricket-match-squads/{id}` (slug optional) inside the Next.js flight
+    payload: the plain-text fragment `"players":{"playing XI":[...],"bench":[...]}`
+    appears once per team. Each entry carries id, name, fullName, nickName,
+    captain, role ("WK-Batter", "Batting Allrounder", ...), keeper, substitute,
+    teamId, teamName, battingStyle ("LEFT"), bowlingStyle, imageDetails and
+    profileUrl. Measured: 162951 PRSW 11 + 4 bench, HBHW 11 + 7; 162961 MLSW
+    11 + 3, MLRW 11 + 4; 177214 PAKA 11 + 4, BANA 11 + 7 — always 11 in
+    "playing XI", bench 3-7. The block is **absent until the XI is announced**
+    (162963 in Preview: zero blocks), so scrape only after the toss. Unescaping
+    `\\"` to `"` and json-decoding from `"players":{` with raw_decode parses it
+    reliably; a naive brace regex breaks on nested imageDetails.
+
+23. **A completed match keeps its livescore body but drops state and status**
     from that header (162951 and 151352 both return miniscore with state None,
     status None); scorecard and commentary headers keep "Complete". So the
     completion signal must be taken from the scorecard/comm header, not from
