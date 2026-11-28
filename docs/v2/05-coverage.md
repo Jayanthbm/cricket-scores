@@ -109,15 +109,53 @@ commentary.
 
 ## Pending (only)
 
-Every row still open, in the same order as the table above.
+Every row still open, filtered out of the table above.
 
-- **TEST (8)** - Day start (Stumps -> In Progress); Lunch session break; Stumps on days 3-5; Live follow-on / live declaration; Delayed (rain / bad light); Abandoned mid-match; Tied Test; Extended day (endTime past schedule)
-- **ODI (7)** - Innings break; Live DLS chase with revised target; Tie + super over; In-play rain delay; Abandoned mid-innings; No result with a partial innings; Powerplay in a rain-reduced innings
-- **T20 (4)** - Tie + super over; Abandoned mid-innings; Target populated at innings break; Strategic timeout (IPL / WPL only)
-- **T10 (8)** - Toss; Live innings / ball limit applied live; Innings break; Chase / target / required rate; Powerplay behaviour; Delayed / abandoned; Tie + super over; Format detection on a live payload
-- **THE_HUNDRED (8)** - Toss; Live innings; Live ball display (10-ball sets); Powerplay (25 balls); Innings break; Chase; Delayed / abandoned; Tie-break (Super 5, not a normal super over)
-- **SIXES (7)** - Toss; Live innings; Innings break; Chase; Delayed / abandoned; Tie + super over; Format detection on a live payload
-- **ALL (1)** - Tie + super over, the transition itself
+| Format      | Pending item                                 | Live needed? | Evidence / next step                                                                                                              |
+| ----------- | -------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| TEST        | Day start (Stumps -> In Progress)            | yes          | armed 03:25 on 161296                                                                                                             |
+| TEST        | Lunch session break                          | yes          | tea is covered; lunch may never reach livescore                                                                                   |
+| TEST        | Stumps on days 3-5                           | yes          | only day 1-2 snapshots so far                                                                                                     |
+| TEST        | Live follow-on / live declaration            | yes          | both only seen in finished payloads                                                                                               |
+| TEST        | Delayed (rain / bad light)                   | yes          | no Test DELAYED payload at all                                                                                                    |
+| TEST        | Abandoned mid-match                          | yes          | none captured                                                                                                                     |
+| TEST        | Tied Test                                    | yes          | resultType TIE; two in history                                                                                                    |
+| TEST        | Extended day (endTime past schedule)         | yes          | never observed                                                                                                                    |
+| ODI         | Innings break                                | yes          | no 50-over break captured                                                                                                         |
+| ODI         | Live DLS chase with revised target           | yes          | 161245/161256 are finished; revisedOvers reads 0 after the result                                                                 |
+| ODI         | Tie + super over                             | yes          | field shape closed by 115165; only the live tie -> super-over transition remains                                                  |
+| ODI         | In-play rain delay                           | yes          | none                                                                                                                              |
+| ODI         | Abandoned mid-innings                        | yes          | 161260 had no innings                                                                                                             |
+| ODI         | No result with a partial innings             | yes          | 161487 is T20                                                                                                                     |
+| ODI         | Powerplay in a rain-reduced innings          | yes          | implied by 161245, not asserted                                                                                                   |
+| T20         | Tie + super over                             | yes          | field shape closed by 115165; only the live tie -> super-over transition remains                                                  |
+| T20         | Abandoned mid-innings                        | yes          | only pre-match abandonment captured                                                                                               |
+| T20         | Target populated at innings break            | yes          | 175290 carried "need 187" in status only                                                                                          |
+| T20         | Strategic timeout (IPL / WPL only)           | yes          | mid-innings ~2.5 min pause; check whether upstream says anything in state/status (SIG includes status, so any change is captured) |
+| T10         | Toss                                         | yes          | any live match                                                                                                                    |
+| T10         | Live innings / ball limit applied live       | yes          | only a finished payload                                                                                                           |
+| T10         | Innings break                                | yes          | short break, 5-min sampling is marginal                                                                                           |
+| T10         | Chase / target / required rate               | yes          | any live match                                                                                                                    |
+| T10         | Powerplay behaviour                          | yes          | any live match                                                                                                                    |
+| T10         | Delayed / abandoned                          | yes          | any live match                                                                                                                    |
+| T10         | Tie + super over                             | yes          | field shape closed by 115165; only the live tie -> super-over transition remains                                                  |
+| T10         | Format detection on a live payload           | yes          | series-name hint only, never exercised live                                                                                       |
+| THE_HUNDRED | Toss                                         | yes          | any live match                                                                                                                    |
+| THE_HUNDRED | Live innings                                 | yes          | any live match                                                                                                                    |
+| THE_HUNDRED | Live ball display (10-ball sets)             | yes          | only a final card verified                                                                                                        |
+| THE_HUNDRED | Powerplay (25 balls)                         | yes          | any live match                                                                                                                    |
+| THE_HUNDRED | Innings break                                | yes          | any live match                                                                                                                    |
+| THE_HUNDRED | Chase                                        | yes          | any live match                                                                                                                    |
+| THE_HUNDRED | Delayed / abandoned                          | yes          | any live match                                                                                                                    |
+| THE_HUNDRED | Tie-break (Super 5, not a normal super over) | yes          | any live match                                                                                                                    |
+| SIXES       | Toss                                         | yes          | any live match                                                                                                                    |
+| SIXES       | Live innings                                 | yes          | any live match                                                                                                                    |
+| SIXES       | Innings break                                | yes          | very short break                                                                                                                  |
+| SIXES       | Chase                                        | yes          | any live match                                                                                                                    |
+| SIXES       | Delayed / abandoned                          | yes          | any live match                                                                                                                    |
+| SIXES       | Tie + super over                             | yes          | field shape closed by 115165; only the live tie -> super-over transition remains                                                  |
+| SIXES       | Format detection on a live payload           | yes          | series-name hint only                                                                                                             |
+| ALL         | Tie + super over, the transition itself      | yes          | same hole in T20/ODI/T10/Hundred/Sixes                                                                                            |
 
 ## Can a past match close any of these?
 
