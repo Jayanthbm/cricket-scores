@@ -36,6 +36,32 @@ case "$cmd" in
     echo "pushed scripts and boot hook"
     ;;
 
+  digest)
+    "$0" pull >/dev/null
+    python3 - "$LOCAL" <<'PY'
+import sys, glob, os, datetime, json
+root = sys.argv[1]
+for path in sorted(glob.glob(os.path.join(root, 'trace', '*.jsonl'))):
+    lines = [l.rstrip('\n') for l in open(path) if l.strip()]
+    if not lines:
+        continue
+    print('\n==', os.path.basename(path), f'({len(lines)} lines)')
+    prev_state = None
+    for line in lines:
+        parts = line.split(' ', 1)
+        try:
+            ts = int(parts[0])
+            when = datetime.datetime.fromtimestamp(ts).strftime('%H:%M:%S')
+        except ValueError:
+            print('  ', line[:120]); continue
+        body = parts[1] if len(parts) > 1 else ''
+        state = body.split('|')[0].strip()
+        mark = '>>' if prev_state and state != prev_state else '  '
+        print(f'  {mark} {when}  {body[:110]}')
+        prev_state = state or prev_state
+PY
+    ;;
+
   logs)
     adb shell "tail -${2:-40} $DIR/log/${3:-watchdog}.log"
     ;;
