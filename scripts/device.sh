@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Capture phone helper. The phone does the polling; this only arms, checks, pulls.
+set -euo pipefail
+DIR=/data/local/tmp/cap
+LOCAL=.\.analysis/device
+cmd=${1:-status}
+
+case "$cmd" in
+  status)
+    adb shell "date '+%H:%M:%S'; echo '--- pids ---'; cat $DIR/run/*.pid 2>/dev/null | tr '\\n' ' '; echo; echo '--- watchdog heartbeat ---'; tail -1 $DIR/log/watchdog-heartbeat.log 2>/dev/null; echo '--- traces ---'; for f in $DIR/trace/*.jsonl; do echo \"\$(basename \$f): \$(wc -l < \$f) lines\"; tail -2 \$f; done"
+    ;;
+  arm)
+    id=${2:?id}; from=${3:?from}; to=${4:?to}; base=${5:-60}; fast=${6:-15}
+    adb shell "grep -q '^$id ' $DIR/watchlist || echo '$id $from $to $base $fast 900 manual' >> $DIR/watchlist"
+    adb shell "setsid nohup $DIR/watch.sh $id $from $to $base $fast 900 >> $DIR/log/$id.log 2>&1 & echo armed $id"
+    ;;
+  stop)
+    which=${2:-all}
+    adb shell "if [ '$which' = all ]; then pkill -f '$DIR/watch.sh'; rm -f $DIR/run/*.pid; else kill \$(cat $DIR/run/$which.pid) 2>/dev/null; rm -f $DIR/run/$which.pid; fi; echo stopped $which"
+    ;;
+  pull)
+    mkdir -p "$LOCAL"
+    adb shell "tar -czf - -C $DIR trace raw 2>/dev/null" > "$LOCAL/phone-capture.tgz"
+    tar -xzf "$LOCAL/phone-capture.tgz" -C "$LOCAL" && rm -f "$LOCAL/phone-capture.tgz"
+    echo "pulled to $LOCAL"; du -sh "$LOCAL"
+    ;;
+  push)
+    adb push scripts/phone/watch.sh scripts/phone/watchdog.sh /data/local/tmp/cap/ >/dev/null
+    adb shell 'chmod 755 /data/local/tmp/cap/watch.sh /data/local/tmp/cap/watchdog.sh'
+    adb push scripts/phone/99-capture.sh /data/local/tmp/cap/99-capture.sh >/dev/null
+    adb shell 'su -c "cp /data/local/tmp/cap/99-capture.sh /data/adb/service.d/99-capture.sh; chmod 755 /data/adb/service.d/99-capture.sh"'
+    echo "pushed scripts and boot hook"
+    ;;
+
+  logs)
+    adb shell "tail -${2:-40} $DIR/log/${3:-watchdog}.log"
+    ;;
+  *)
+    echo "usage: $0 {status|arm <id> <from> <to> [base] [fast]|stop [id|all]|pull|push|logs [n] [name]}"; exit 1
+    ;;
+esac
