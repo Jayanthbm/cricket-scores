@@ -14,6 +14,7 @@ as before. Everything below is additive and lives under /v2.
 | 02-states-matrix.md     | every match state + format, what is populated in each, real examples          |
 | 03-api-contract.md      | **the contract**: every endpoint, every field, examples, FE recipes           |
 | 04-gaps-and-roadmap.md  | known gaps, open questions, and the multi-week capture plan                   |
+| 05-coverage.md          | what is verified vs pending per format, and whether a live match is needed    |
 
 ---
 
