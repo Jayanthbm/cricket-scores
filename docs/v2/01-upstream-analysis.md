@@ -354,12 +354,15 @@ lastUpdatedOver, odds }. It **disappears (null) when the match completes**.
     `\\"` to `"` and json-decoding from `"players":{` with raw_decode parses it
     reliably; a naive brace regex breaks on nested imageDetails.
 
-23. **LIVE can begin while status still shows the toss.** 175290 flipped to
-    LIVE at 15:31:58 with score 0/0 (0) and status still "Desert Vipers opt to
-    bowl"; by 0.4 overs it read "MI Emirates 4/0 (0.4)". So state leads the
-    score line by at least a ball, same pattern as COMPLETE where status leads
-    rawState. v2 passes both through untouched; clients should render
-    state/score, not status, at the moment of transition.
+23. **Upstream can leave the toss sentence as status for a whole innings.**
+    175290's livescore `miniscore.status` and scorecard `matchHeader.status`
+    both still read "Desert Vipers opt to bowl" at 16:13 with the score 58/1
+    (8) - 40 minutes and 8 overs after the first ball. v2 replaces a stale toss
+    status with the score line as soon as a ball is bowled, which is why our
+    payload showed "MI Emirates 58/1 (8)" while the raw upstream never caught
+    up in the window we watched. Never treat the header status as reliable
+    mid-innings; score it from the miniscore fields and keep the replacement
+    rule.
 
 24. **A completed match keeps its livescore body but drops state and status**
     from that header (162951 and 151352 both return miniscore with state None,
