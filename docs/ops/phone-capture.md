@@ -86,3 +86,7 @@ expected and not a sign the rig broke - prefix with `su -c`.
   check `run/watchdog.pid` instead.
 - A window whose end is already in the past belongs to tomorrow; `watch.sh` and
   `watchdog.sh` both roll it forward a day.
+- A bare `"overs":` in livescore matches each **bowler's** overs first, so the
+  first hit at an innings break was the striker's `4`, not the innings' `20`.
+  The trace now reads the scorecard's last `scoreDetails` (innings-ordered)
+  instead, and carries `inningsId` so an innings flip is visible on its own.

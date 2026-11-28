@@ -29,11 +29,22 @@ while :; do
   if [ "$LN" = "200" ] && [ "$SC" = "200" ]; then
     STATE=$(grep -o '"state":"[^"]*"' "$DIR/tmp/$ID.sc.json" | head -1 | sed 's/.*:"//;s/"$//')
     STATUS=$(grep -o '"status":"[^"]*"' "$DIR/tmp/$ID.sc.json" | head -1 | sed 's/.*:"//;s/"$//')
-    BAT=$(grep -o '"batTeam":{[^}]*}' "$DIR/tmp/$ID.ls.json" | head -1)
-    RUNS=$(printf '%s' "$BAT" | grep -o '"teamScore":[0-9]*' | head -1 | cut -d: -f2)
-    WKTS=$(printf '%s' "$BAT" | grep -o '"teamWkts":[0-9]*' | head -1 | cut -d: -f2)
-    OVERS=$(grep -o '"overs":[0-9.]*' "$DIR/tmp/$ID.ls.json" | head -1 | cut -d: -f2)
-    SIG="$STATE|${RUNS:--}/${WKTS:--}|${OVERS:--}|$STATUS"
+    # The scorecard's innings list is ordered by innings, so the last
+    # scoreDetails is the innings in progress (or the one that just ended).
+    # A bare "overs" in livescore also matches each bowler's overs.
+    DET=$(grep -o '"scoreDetails":{[^}]*}' "$DIR/tmp/$ID.sc.json" | tail -1)
+    if [ -n "$DET" ]; then
+      RUNS=$(printf '%s' "$DET" | sed 's/.*"runs":\([0-9]*\).*/\1/')
+      WKTS=$(printf '%s' "$DET" | sed 's/.*"wickets":\([0-9]*\).*/\1/')
+      OVERS=$(printf '%s' "$DET" | sed 's/.*"overs":\([0-9.]*\).*/\1/')
+    else
+      BAT=$(grep -o '"batTeam":{[^}]*}' "$DIR/tmp/$ID.ls.json" | head -1)
+      RUNS=$(printf '%s' "$BAT" | grep -o '"teamScore":[0-9]*' | head -1 | cut -d: -f2)
+      WKTS=$(printf '%s' "$BAT" | grep -o '"teamWkts":[0-9]*' | head -1 | cut -d: -f2)
+      OVERS=$(grep -o '"overs":[0-9.]*' "$DIR/tmp/$ID.ls.json" | tail -1 | cut -d: -f2)
+    fi
+    IID=$(grep -o '"inningsId":[0-9]*' "$DIR/tmp/$ID.ls.json" | head -1 | cut -d: -f2)
+    SIG="$STATE|${IID:--}|${RUNS:--}/${WKTS:--}|${OVERS:--}|$STATUS"
     if [ "$SIG" != "$LAST_SIG" ]; then
       echo "$TS $SIG" >> "$DIR/trace/$ID.jsonl"
       gzip -c "$DIR/tmp/$ID.ls.json" > "$DIR/raw/$ID/$TS-ls.json.gz"
