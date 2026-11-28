@@ -3,6 +3,10 @@
 set -euo pipefail
 DIR=/data/local/tmp/cap
 LOCAL=.\.analysis/device
+# Two devices are often attached (the phone over WiFi plus anything on USB);
+# pin to the capture phone unless CAP_DEVICE overrides it.
+CAP_DEVICE=${CAP_DEVICE:-192.168.31.64:5555}
+adb() { command adb -s "$CAP_DEVICE" "$@"; }
 cmd=${1:-status}
 
 case "$cmd" in
