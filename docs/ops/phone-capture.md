@@ -48,14 +48,33 @@ is 1 line per ball-ish event instead of 4-12 per minute.
 
 ## Survival measures, and what each protects against
 
-| measure | protects against |
-| --- | --- |
-| `setsid nohup` | adb shell exit / USB unplug |
-| `/sys/power/wake_lock` | CPU sleeping with the screen off |
-| `dumpsys deviceidle disable` | Doze freezing the network |
-| `settings_enable_monitor_phantom_procs false` | Android 12 killing child shells |
-| watchdog every 5 min | crash, OOM, accidental kill |
-| Magisk `service.d` hook | reboot |
+| measure                                       | protects against                 |
+| --------------------------------------------- | -------------------------------- |
+| `setsid nohup`                                | adb shell exit / USB unplug      |
+| `/sys/power/wake_lock`                        | CPU sleeping with the screen off |
+| `dumpsys deviceidle disable`                  | Doze freezing the network        |
+| `settings_enable_monitor_phantom_procs false` | Android 12 killing child shells  |
+| watchdog every 5 min                          | crash, OOM, accidental kill      |
+| Magisk `service.d` hook                       | reboot                           |
+
+## Root over WiFi, and why the watcher does not need it
+
+Magisk authorises by UID (the `shell` user), not by transport, so
+`adb -s 192.168.31.64:5555 shell su -c id` returns 0 exactly like USB. The
+first call may raise a Superuser prompt on the phone; allow it once and it
+persists.
+
+The watcher and watchdog run as `shell` (uid 2000) on purpose: polling and
+writing under `/data/local/tmp` needs no root. Root was only needed at setup
+time, for four things:
+
+- `/data/adb/service.d/99-capture.sh` (boot hook)
+- `dumpsys deviceidle disable` (doze)
+- `/sys/power/wake_lock` (CPU stays awake)
+- `settings put global settings_enable_monitor_phantom_procs false`
+
+Reading those same paths back as `shell` gives "Permission denied"; that is
+expected and not a sign the rig broke - prefix with `su -c`.
 
 ## Gotchas learned the hard way
 
