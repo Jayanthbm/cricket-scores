@@ -11,7 +11,7 @@ cmd=${1:-status}
 
 case "$cmd" in
   status)
-    adb shell "date '+%H:%M:%S'; echo '--- pids ---'; cat $DIR/run/*.pid 2>/dev/null | tr '\\n' ' '; echo; echo '--- watchdog heartbeat ---'; tail -1 $DIR/log/watchdog-heartbeat.log 2>/dev/null; echo '--- traces ---'; for f in $DIR/trace/*.jsonl; do echo \"\$(basename \$f): \$(wc -l < \$f) lines\"; tail -2 \$f; done"
+    adb shell "date '+%H:%M:%S'; echo '--- pids ---'; cat $DIR/run/*.pid 2>/dev/null | tr '\\n' ' '; echo; echo '--- watchdog heartbeat ---'; tail -1 $DIR/log/watchdog-heartbeat.log 2>/dev/null; echo '--- traces ---'; if ls $DIR/trace/*.jsonl >/dev/null 2>&1; then for f in $DIR/trace/*.jsonl; do echo \"\$(basename \$f): \$(wc -l < \$f) lines\"; tail -2 \$f; done; else echo 'none yet'; fi"
     ;;
   arm)
     id=${2:?id}; from=${3:?from}; to=${4:?to}; base=${5:-60}; fast=${6:-15}
