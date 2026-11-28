@@ -338,11 +338,17 @@ function buildTeamCards({ header, scorecardJson, homeInfo, homeMatch, livescoreJ
 				{ id: homeInfo?.team2?.teamId, name: homeInfo?.team2?.teamName, shortName: homeInfo?.team2?.teamSName },
 			];
 
-	// Upstream team1/team2 ordering differs between /api/home and the scorecard
-	// header, so use the home order whenever it is available to stay stable.
-	const order = homeInfo
-		? [toNumber(homeInfo.team1?.teamId), toNumber(homeInfo.team2?.teamId)]
-		: [toNumber(header?.team1?.id), toNumber(header?.team2?.id)];
+	// Order by the innings once one exists: the side that batted first leads and
+	// keeps leading for the rest of the match. Before a ball is bowled there are
+	// no innings, so fall back to the header order. The home feed is deliberately
+	// ignored - it only features a handful of matches, so whether it happened to
+	// list this one moved the array mid-match (175290 read [DV, MIE] in Preview
+	// and [MIE, DV] from the toss).
+	const order = inningsList.length
+		? [...inningsList]
+				.sort((left, right) => (toNumber(left.inningsId) || 0) - (toNumber(right.inningsId) || 0))
+				.map((innings) => toNumber(innings.team.id))
+		: rawTeams.map((team) => toNumber(team.id));
 
 	const teams = rawTeams
 		.map((team) => ({
@@ -351,7 +357,12 @@ function buildTeamCards({ header, scorecardJson, homeInfo, homeMatch, livescoreJ
 			innings: inningsList.filter((innings) => innings.team.id === toNumber(team.id)).map((innings) => innings.score),
 			isBatting: showBatting && Boolean(battingTeamId && battingTeamId === toNumber(team.id)),
 		}))
-		.sort((left, right) => order.indexOf(left.id) - order.indexOf(right.id));
+		.sort((left, right) => {
+			const leftIndex = order.indexOf(left.id);
+			const rightIndex = order.indexOf(right.id);
+
+			return (leftIndex === -1 ? order.length : leftIndex) - (rightIndex === -1 ? order.length : rightIndex);
+		});
 
 	return teams.map((team) => buildTeamCard({ ...team, baseUrl }));
 }

@@ -331,8 +331,52 @@ describe('match assembly', () => {
 		expect(match.isComplete).toBe(true);
 		expect(match.live).toBe(null);
 		expect(match.result).toMatchObject({ type: 'WIN', winnerTeamId: 1, margin: { value: 50, unit: 'RUNS' } });
-		// the fixture only carries the chase innings, so team A has no score
-		expect(match.teams[1].score).toBe('54/8');
+		// the fixture only carries the chase innings, so the chasing side leads
+		expect(match.teams.map((team) => team.shortName)).toEqual(['B', 'A']);
+		expect(match.teams[0].score).toBe('54/8');
+
+		expect(match.teams[1].score).toBe(null);
+	});
+
+	it('orders teams by the innings once play starts, not by the header', () => {
+		const card = scorecardFixture();
+		card.matchHeader.team1 = { id: 2, name: 'Team B', shortName: 'B' };
+		card.matchHeader.team2 = { id: 1, name: 'Team A', shortName: 'A' };
+		card.scoreCard = [
+			{
+				inningsId: 1,
+				batTeamDetails: { batTeamId: 1, batTeamName: 'Team A', batTeamShortName: 'A' },
+				scoreDetails: { runs: 104, wickets: 7, overs: 9 },
+			},
+			{ ...card.scoreCard[0], inningsId: 2 },
+		];
+
+		const match = buildMatch({
+			header: card.matchHeader,
+			scorecardJson: { scoreCard: card.scoreCard },
+			livescoreJson: livescoreFixture(),
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.teams.map((team) => team.shortName)).toEqual(['A', 'B']);
+	});
+
+	it('keeps the header order before the first innings', () => {
+		const card = scorecardFixture();
+		card.matchHeader.state = 'Toss';
+		card.matchHeader.status = 'Team B opt to bowl';
+
+		const match = buildMatch({
+			header: card.matchHeader,
+			scorecardJson: { scoreCard: [] },
+			homeInfo: {
+				team1: { teamId: 2, teamName: 'Team B', teamSName: 'B' },
+				team2: { teamId: 1, teamName: 'Team A', teamSName: 'A' },
+			},
+			baseUrl: 'http://example.com',
+		});
+
+		expect(match.teams.map((team) => team.shortName)).toEqual(['A', 'B']);
 	});
 
 	it('replaces a stale toss status with the score line once a ball is bowled', () => {
